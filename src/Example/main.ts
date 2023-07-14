@@ -5,7 +5,6 @@ const res = new Vector3(1, 2, 3).add(new Vector3(1, 2, 3));
 
 const m = new Matrix4x4();
 m.set(3, 0, 5);
-console.log(m);
 
 const renderer = new Renderer(100, 100);
 const triangle = Mesh.fromArrays(
