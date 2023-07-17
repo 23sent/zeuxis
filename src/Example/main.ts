@@ -7,10 +7,7 @@ const m = new Matrix4x4();
 m.set(3, 0, 5);
 
 const renderer = new Renderer(100, 100);
-const triangle = Mesh.fromArrays(
-  [new Vertex([-1, 0, 0]), new Vertex([0, 0, 0]), new Vertex([1, 0, 0])],
-  [0, 1, 2],
-);
+const triangle = Mesh.fromArrays([new Vertex([-0.9, 0, 0]), new Vertex([0, 0.5, 0]), new Vertex([0.9, 0, 0])], [0, 1, 2]);
 
 export function main(render: (buffer: Uint8ClampedArray) => void): number {
   renderer.fillBuffer(new Color(0, 0, 0, 0));

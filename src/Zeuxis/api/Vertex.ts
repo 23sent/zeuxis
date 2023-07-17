@@ -1,3 +1,9 @@
+import { Vector3 } from '../math';
+
 export class Vertex {
-  constructor(public position: Array<number>) {}
+  public position: Vector3;
+
+  constructor(p: Vector3 | number[]) {
+    this.position = new Vector3(p);
+  }
 }

@@ -1,3 +1,5 @@
+import { Vector3 } from '../Vector';
+
 export class Matrix3x3 {
   private readonly ROWS: number = 3;
   private readonly COLS: number = 3;
@@ -82,6 +84,18 @@ export class Matrix3x3 {
       -minor_21 * oneOverDet,
       +minor_22 * oneOverDet,
     ]);
+  }
+
+  multiplyVec3(v: Vector3): Vector3 {
+    const x = v.x;
+    const y = v.y;
+    const z = v.z;
+
+    return new Vector3(
+      this._data[0] * x + this._data[4] * y + this._data[8] * z,
+      this._data[1] * x + this._data[5] * y + this._data[9] * z,
+      this._data[2] * x + this._data[6] * y + this._data[10] * z,
+    );
   }
 
   // Static Operation

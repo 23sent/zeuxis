@@ -5,10 +5,20 @@ export class Vector3 {
   public y: number;
   public z: number;
 
-  constructor(x: number, y: number = 0, z: number = 0) {
-    this.x = x;
-    this.y = y;
-    this.z = z;
+  constructor(x: number | Vector3 | number[] = 0, y: number = 0, z: number = 0) {
+    if (x instanceof Vector3) {
+      this.x = x.x;
+      this.y = x.y;
+      this.z = x.z;
+    } else if (x instanceof Array) {
+      this.x = x[0] || 0;
+      this.y = x[1] || 0;
+      this.z = x[2] || 0;
+    } else {
+      this.x = x;
+      this.y = y;
+      this.z = z;
+    }
   }
 
   // Operations
@@ -45,11 +55,7 @@ export class Vector3 {
   }
 
   cross(v: Vector3): Vector3 {
-    return new Vector3(
-      this.y * v.z - this.z * v.y,
-      this.z * v.x - this.x * v.z,
-      this.x * v.y - this.y * v.x,
-    );
+    return new Vector3(this.y * v.z - this.z * v.y, this.z * v.x - this.x * v.z, this.x * v.y - this.y * v.x);
   }
 
   distance(v: Vector3): number {

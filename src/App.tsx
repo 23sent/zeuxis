@@ -3,8 +3,11 @@ import logo from './logo.svg';
 import './App.css';
 import { main } from './Example/main';
 
+let lastRender = 0;
+
 function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const frameRateRef = useRef<HTMLDivElement>(null);
 
   // useEffect(() => {
   //   if (canvasRef.current) {
@@ -21,11 +24,16 @@ function App() {
 
   useEffect(() => {
     function render(buffer: Uint8ClampedArray) {
-      if (canvasRef.current) {
+      if (canvasRef.current && frameRateRef.current) {
         // create ImageData instance
         const iData = new ImageData(buffer, 100, 100);
         const ctx = canvasRef.current.getContext('2d');
         ctx?.putImageData(iData, 0, 0);
+
+        const time = window.performance.now();
+        const passed = time - lastRender;
+        frameRateRef.current.innerText = `${((1 / passed) * 1000).toFixed()} fps`;
+        lastRender = time;
       }
     }
     const zeuxis = main(render);
@@ -41,8 +49,9 @@ function App() {
         ref={canvasRef}
         width={100}
         height={100}
-        style={{ margin: '50px auto' } as React.CSSProperties}
+        style={{ margin: '50px auto', border: '1px solid black' } as React.CSSProperties}
       />
+      <div ref={frameRateRef}></div>
     </div>
   );
 }
