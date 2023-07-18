@@ -1,5 +1,6 @@
 // Implemented according (and thanks) to "Game Physics Cookbook - Gabor Szauer"
 
+import { Matrix4x4 } from '../Matrix';
 import { Vector3 } from './Vector3';
 
 export class Vector4 {
@@ -8,7 +9,12 @@ export class Vector4 {
   public z: number;
   public w: number;
 
-  constructor(x: number | Vector3 | Vector4 | number[] = 0, y: number = 0, z: number = 0, w: number = 0) {
+  constructor(
+    x: number | Vector3 | Vector4 | number[] = 0,
+    y: number = 0,
+    z: number = 0,
+    w: number = 0,
+  ) {
     if (x instanceof Vector4) {
       this.x = x.x;
       this.y = x.y;
@@ -49,9 +55,21 @@ export class Vector4 {
     }
   }
 
-  multiply(v: Vector4 | number): Vector4 {
+  multiply(v: Vector4 | Matrix4x4 | number): Vector4 {
     if (v instanceof Vector4) {
       return new Vector4(this.x * v.x, this.y * v.y, this.z * v.z, this.w * v.w);
+    } else if (v instanceof Matrix4x4) {
+      const x = this.x;
+      const y = this.y;
+      const z = this.z;
+      const w = this.w;
+
+      return new Vector4(
+        v._data[0] * x + v._data[4] * y + v._data[8] * z + v._data[12] * w,
+        v._data[1] * x + v._data[5] * y + v._data[9] * z + v._data[13] * w,
+        v._data[2] * x + v._data[6] * y + v._data[10] * z + v._data[14] * w,
+        v._data[3] * x + v._data[7] * y + v._data[11] * z + v._data[15] * w,
+      );
     } else {
       return new Vector4(this.x * v, this.y * v, this.z * v, this.w * v);
     }

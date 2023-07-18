@@ -1,5 +1,7 @@
 // Implemented according (and thanks) to "Game Physics Cookbook - Gabor Szauer"
 
+import { Vector4 } from './Vector4';
+
 export class Vector3 {
   public x: number;
   public y: number;
@@ -55,7 +57,11 @@ export class Vector3 {
   }
 
   cross(v: Vector3): Vector3 {
-    return new Vector3(this.y * v.z - this.z * v.y, this.z * v.x - this.x * v.z, this.x * v.y - this.y * v.x);
+    return new Vector3(
+      this.y * v.z - this.z * v.y,
+      this.z * v.x - this.x * v.z,
+      this.x * v.y - this.y * v.x,
+    );
   }
 
   distance(v: Vector3): number {
@@ -69,6 +75,10 @@ export class Vector3 {
   angle(v: Vector3): number {
     const m = Math.sqrt(this.magnitudeSq * v.magnitudeSq);
     return Math.acos(this.dot(v) / m);
+  }
+
+  toHomogeneous(v: Vector3): Vector4 {
+    return new Vector4(v);
   }
 
   // Getters

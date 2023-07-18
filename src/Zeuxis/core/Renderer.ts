@@ -1,23 +1,30 @@
-import { Color, Mesh, PerspectiveCamera, OrthographicCamera, Vertex } from '../api';
-import { Matrix4x4, Vector2, Vector3, Vector4 } from '../math';
+import { Color, Mesh, Vertex } from '../api';
+import { Vector2, Vector3, Vector4 } from '../math';
+import { Shader } from './Shader';
 
-const camera = new OrthographicCamera();
-console.log(camera.getViewProjectionMatrix()._data);
-
-document.addEventListener('wheel', (ev: WheelEvent) => {
-  const v = ev.deltaY / 1000;
-  // camera.setPosition(new Vector3(camera.position.x + v, 0, 0));
-  // console.log(camera.position.x);
-
-  camera.setPosition(new Vector3(0, 0, camera.position.z + v));
-  console.log(camera.position.z);
-});
+/**
+ * Resources
+ * https://www.scratchapixel.com/lessons/3d-basic-rendering/perspective-and-orthographic-projection-matrix
+ *
+ */
 
 export class Renderer {
+  // TODO: depth buffer
+
   buffer: Uint8ClampedArray;
+
+  private _shader: Shader = new Shader();
 
   constructor(public width: number, public height: number) {
     this.buffer = new Uint8ClampedArray(width * height * 4);
+  }
+
+  get shader(): Shader {
+    return this._shader;
+  }
+
+  set shader(s: Shader) {
+    this._shader = s;
   }
 
   clearBuffer(): void {
@@ -33,37 +40,131 @@ export class Renderer {
     }
   }
 
-  // TODO: Not working properly
-  // Check vector * matrix operation
-  // Check model -> view -> projection transformation
+  edgeFunction(a: Vector2, b: Vector2, c: Vector2): boolean {
+    return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x) <= 0;
+  }
+
   drawMesh(mesh: Mesh<Vertex>): void {
-    for (let i = 0; i < mesh.indicies.length; i++) {
-      const vertexIndex = mesh.indicies[i];
-      const vertex = mesh.verticies[vertexIndex];
+    loop: for (let i = 0; i < mesh.indicies.length; i += 3) {
+      const corners = new Array<Vector2>(3);
 
-      // To Camera Space
-      const pCamera = camera.getViewProjectionMatrix().multiplyVec4(new Vector4(vertex.position));
-      console.log(pCamera.w);
+      for (let j = 0; j < 3; j++) {
+        const vertexIndex = mesh.indicies[i + j];
+        const vertex = mesh.verticies[vertexIndex];
+        this.drawPoint(vertex);
 
-      // To Screen Space
-      const pScreen = new Vector2(pCamera.x / pCamera.z, pCamera.y / pCamera.z);
-      // console.log(pScreen);
+        // Apply Vertex Shader
+        const vsOutput = this._shader.vertexShader(vertex);
+        const clipSpace = vsOutput.clip_space_position;
 
-      if (Math.abs(pScreen.x) > this.width || Math.abs(pScreen.y) > this.height) continue;
+        // if (
+        //   clipSpace.w <= 0 ||
+        //   clipSpace.x < -clipSpace.w ||
+        //   clipSpace.x > clipSpace.w ||
+        //   clipSpace.y < -clipSpace.w ||
+        //   clipSpace.y > clipSpace.w ||
+        //   clipSpace.z < -clipSpace.w ||
+        //   clipSpace.z > clipSpace.w
+        // ) {
+        //   continue loop;
+        // }
 
-      // To Normalized device coordinates
-      const pNDC = new Vector2((pScreen.x + this.width / 2) / this.width, (pScreen.y + this.height / 2) / this.height);
+        if (clipSpace.w <= 0 || clipSpace.z < -clipSpace.w || clipSpace.z > clipSpace.w) {
+          continue loop;
+        }
 
-      // To rasterized coordinates
-      const pRaster = new Vector2(Math.floor(pNDC.x * this.width), Math.floor((1 - pNDC.y) * this.height));
+        // To Normalized Display Coordinates space
+        const NDCSpace = new Vector3(
+          clipSpace.x / clipSpace.w,
+          clipSpace.y / clipSpace.w,
+          clipSpace.z / clipSpace.w,
+        );
 
-      const bufferIndex = ((pRaster.y + 1) * this.width + (pRaster.x + 1)) * 4;
+        // To rasterized coordinates
+        const rasterSpace = new Vector2(
+          Math.floor((NDCSpace.x + 1) * 0.5 * (this.width - 1)),
+          Math.floor((1 - (NDCSpace.y + 1) * 0.5) * (this.height - 1)),
+        );
 
-      this.buffer[bufferIndex + 0] = 255;
-      this.buffer[bufferIndex + 1] = 0;
-      this.buffer[bufferIndex + 2] = 0;
-      this.buffer[bufferIndex + 3] = 255;
+        corners[j] = rasterSpace;
+      }
+
+      // Draw Point
+      // const bufferIndex = (rasterSpace.y * this.width + rasterSpace.x) * 4;
+
+      // // Apply fragment shader
+      // const fsOutput = this._shader.fragmentShader(vsOutput);
+      // const color = fsOutput.fragment_color;
+
+      // this.buffer[bufferIndex + 0] = color.red;
+      // this.buffer[bufferIndex + 1] = color.green;
+      // this.buffer[bufferIndex + 2] = color.blue;
+      // this.buffer[bufferIndex + 3] = color.alpha;
+
+      const point = new Vector2();
+      for (let index = 0; index < this.buffer.length; index += 4) {
+        const i = index / 4;
+        point.x = i % this.width;
+        point.y = Math.floor(i / this.height);
+
+        let inside = true;
+        inside = inside && this.edgeFunction(corners[0], corners[1], point);
+        inside = inside && this.edgeFunction(corners[1], corners[2], point);
+        inside = inside && this.edgeFunction(corners[2], corners[0], point);
+
+        const fsOutput = this._shader.fragmentShader({ clip_space_position: new Vector4() });
+        const color = fsOutput.fragment_color;
+
+        if (inside) {
+          this.buffer[index + 0] = color.red;
+          this.buffer[index + 1] = color.green;
+          this.buffer[index + 2] = color.blue;
+          this.buffer[index + 3] = color.alpha;
+        }
+      }
     }
+  }
+
+  drawPoint(vertex: Vertex) {
+    // Apply Vertex Shader
+    const vsOutput = this._shader.vertexShader(vertex);
+    const clipSpace = vsOutput.clip_space_position;
+
+    if (
+      clipSpace.w <= 0 ||
+      clipSpace.x < -clipSpace.w ||
+      clipSpace.x > clipSpace.w ||
+      clipSpace.y < -clipSpace.w ||
+      clipSpace.y > clipSpace.w ||
+      clipSpace.z < -clipSpace.w ||
+      clipSpace.z > clipSpace.w
+    )
+      return;
+
+    // To Normalized Display Coordinates space
+    const NDCSpace = new Vector3(
+      clipSpace.x / clipSpace.w,
+      clipSpace.y / clipSpace.w,
+      clipSpace.z / clipSpace.w,
+    );
+
+    // To rasterized coordinates
+    const rasterSpace = new Vector2(
+      Math.floor((NDCSpace.x + 1) * 0.5 * (this.width - 1)),
+      Math.floor((1 - (NDCSpace.y + 1) * 0.5) * (this.height - 1)),
+    );
+
+    // Draw Point
+    const bufferIndex = (rasterSpace.y * this.width + rasterSpace.x) * 4;
+
+    //  Apply fragment shader
+    const fsOutput = this._shader.fragmentShader(vsOutput);
+    const color = fsOutput.fragment_color;
+
+    this.buffer[bufferIndex + 0] = color.red;
+    this.buffer[bufferIndex + 1] = color.green;
+    this.buffer[bufferIndex + 2] = color.blue;
+    this.buffer[bufferIndex + 3] = color.alpha;
   }
 
   switchBuffer(): Uint8ClampedArray {

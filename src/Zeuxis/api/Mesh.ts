@@ -6,7 +6,7 @@ export class Mesh<T extends Vertex> {
 
   constructor(vertexCount: number, indexCount: number) {
     this.verticies = new Array(vertexCount);
-    this.indicies = new Uint16Array(indexCount * 3);
+    this.indicies = new Uint16Array(indexCount);
   }
 
   static fromArrays<T extends Vertex>(verticies: Array<T>, indicies: Array<number>): Mesh<T> {

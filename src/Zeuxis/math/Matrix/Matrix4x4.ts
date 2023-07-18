@@ -59,7 +59,12 @@ export class Matrix4x4 {
     const minor_2 = this.get(1, 0) * det_13 - this.get(1, 1) * det_03 + this.get(1, 3) * det_01;
     const minor_3 = this.get(1, 0) * det_12 - this.get(1, 1) * det_02 + this.get(1, 2) * det_01;
 
-    return this.get(0, 0) * minor_0 - this.get(0, 1) * minor_1 + this.get(0, 2) * minor_2 - this.get(0, 3) * minor_3;
+    return (
+      this.get(0, 0) * minor_0 -
+      this.get(0, 1) * minor_1 +
+      this.get(0, 2) * minor_2 -
+      this.get(0, 3) * minor_3
+    );
   }
 
   inverse(): Matrix4x4 {
@@ -98,26 +103,58 @@ export class Matrix4x4 {
     const det_4_5_8_9 = this._data[4] * this._data[9] - this._data[5] * this._data[8];
 
     // minor_yx -> Minor of row y, col x
-    const minor_00 = this._data[5] * det_10_11_14_15 - this._data[6] * det_9_11_13_15 + this._data[7] * det_9_10_13_14;
-    const minor_01 = this._data[4] * det_10_11_14_15 - this._data[6] * det_8_11_12_15 + this._data[7] * det_8_10_12_14;
-    const minor_02 = this._data[4] * det_9_11_13_15 - this._data[5] * det_8_11_12_15 + this._data[7] * det_8_9_12_13;
-    const minor_03 = this._data[4] * det_9_10_13_14 - this._data[5] * det_8_10_12_14 + this._data[6] * det_8_9_12_13;
+    const minor_00 =
+      this._data[5] * det_10_11_14_15 -
+      this._data[6] * det_9_11_13_15 +
+      this._data[7] * det_9_10_13_14;
+    const minor_01 =
+      this._data[4] * det_10_11_14_15 -
+      this._data[6] * det_8_11_12_15 +
+      this._data[7] * det_8_10_12_14;
+    const minor_02 =
+      this._data[4] * det_9_11_13_15 -
+      this._data[5] * det_8_11_12_15 +
+      this._data[7] * det_8_9_12_13;
+    const minor_03 =
+      this._data[4] * det_9_10_13_14 -
+      this._data[5] * det_8_10_12_14 +
+      this._data[6] * det_8_9_12_13;
 
-    const minor_10 = this._data[1] * det_10_11_14_15 - this._data[2] * det_9_11_13_15 + this._data[3] * det_9_10_13_14;
-    const minor_11 = this._data[0] * det_10_11_14_15 - this._data[2] * det_8_11_12_15 + this._data[3] * det_8_10_12_14;
-    const minor_12 = this._data[0] * det_9_11_13_15 - this._data[1] * det_8_11_12_15 + this._data[3] * det_8_9_12_13;
-    const minor_13 = this._data[0] * det_9_10_13_14 - this._data[1] * det_8_10_12_14 + this._data[2] * det_8_9_12_13;
+    const minor_10 =
+      this._data[1] * det_10_11_14_15 -
+      this._data[2] * det_9_11_13_15 +
+      this._data[3] * det_9_10_13_14;
+    const minor_11 =
+      this._data[0] * det_10_11_14_15 -
+      this._data[2] * det_8_11_12_15 +
+      this._data[3] * det_8_10_12_14;
+    const minor_12 =
+      this._data[0] * det_9_11_13_15 -
+      this._data[1] * det_8_11_12_15 +
+      this._data[3] * det_8_9_12_13;
+    const minor_13 =
+      this._data[0] * det_9_10_13_14 -
+      this._data[1] * det_8_10_12_14 +
+      this._data[2] * det_8_9_12_13;
 
-    const minor_20 = this._data[1] * det_6_7_14_15 - this._data[2] * det_5_7_13_15 + this._data[3] * det_5_6_13_14;
-    const minor_21 = this._data[0] * det_6_7_14_15 - this._data[2] * det_4_7_12_15 + this._data[3] * det_4_6_12_14;
-    const minor_22 = this._data[0] * det_5_7_13_15 - this._data[1] * det_4_7_12_15 + this._data[3] * det_4_5_12_13;
-    const minor_23 = this._data[0] * det_5_6_13_14 - this._data[1] * det_4_6_12_14 + this._data[2] * det_4_5_12_13;
+    const minor_20 =
+      this._data[1] * det_6_7_14_15 - this._data[2] * det_5_7_13_15 + this._data[3] * det_5_6_13_14;
+    const minor_21 =
+      this._data[0] * det_6_7_14_15 - this._data[2] * det_4_7_12_15 + this._data[3] * det_4_6_12_14;
+    const minor_22 =
+      this._data[0] * det_5_7_13_15 - this._data[1] * det_4_7_12_15 + this._data[3] * det_4_5_12_13;
+    const minor_23 =
+      this._data[0] * det_5_6_13_14 - this._data[1] * det_4_6_12_14 + this._data[2] * det_4_5_12_13;
 
-    const minor_30 = this._data[1] * det_6_7_10_11 - this._data[2] * det_5_7_9_11 + this._data[3] * det_5_6_9_10;
-    const minor_31 = this._data[0] * det_6_7_10_11 - this._data[2] * det_4_7_8_11 + this._data[3] * det_4_6_8_10;
+    const minor_30 =
+      this._data[1] * det_6_7_10_11 - this._data[2] * det_5_7_9_11 + this._data[3] * det_5_6_9_10;
+    const minor_31 =
+      this._data[0] * det_6_7_10_11 - this._data[2] * det_4_7_8_11 + this._data[3] * det_4_6_8_10;
 
-    const minor_32 = this._data[0] * det_5_7_9_11 - this._data[1] * det_4_7_8_11 + this._data[3] * det_4_5_8_9;
-    const minor_33 = this._data[0] * det_5_6_9_10 - this._data[1] * det_4_6_8_10 + this._data[2] * det_4_5_8_9;
+    const minor_32 =
+      this._data[0] * det_5_7_9_11 - this._data[1] * det_4_7_8_11 + this._data[3] * det_4_5_8_9;
+    const minor_33 =
+      this._data[0] * det_5_6_9_10 - this._data[1] * det_4_6_8_10 + this._data[2] * det_4_5_8_9;
 
     return new Matrix4x4([
       +minor_00 * oneOverDet,
@@ -192,44 +229,18 @@ export class Matrix4x4 {
     return result;
   }
 
-  multiplyVec3(v: Vector3, w: number = 1): Vector3 {
-    const x = v.x;
-    const y = v.y;
-    const z = v.z;
-
-    return new Vector3(
-      this._data[0] * x + this._data[4] * y + this._data[8] * z + this._data[12] * w,
-      this._data[1] * x + this._data[5] * y + this._data[9] * z + this._data[13] * w,
-      this._data[2] * x + this._data[6] * y + this._data[10] * z + this._data[14] * w,
-    );
-  }
-
-  multiplyVec4(v: Vector4): Vector4 {
-    const x = v.x;
-    const y = v.y;
-    const z = v.z;
-    const w = v.w;
-
-    return new Vector4(
-      this._data[0] * x + this._data[4] * y + this._data[8] * z + this._data[12] * w,
-      this._data[1] * x + this._data[5] * y + this._data[9] * z + this._data[13] * w,
-      this._data[2] * x + this._data[6] * y + this._data[10] * z + this._data[14] * w,
-      this._data[3] * x + this._data[7] * y + this._data[11] * z + this._data[15] * w,
-    );
-  }
-
   // Static Operation
   static Multiply(a: Matrix4x4, b: Matrix4x4): Matrix4x4 {
     if (a.COLS !== b.ROWS) throw new Error('Invalid matrix multiplication.');
 
     const result = new Matrix4x4();
-    for (let x = 0; x < result.COLS; x++) {
-      for (let y = 0; y < result.ROWS; y++) {
+    for (let i = 0; i < 4; i++) {
+      for (let j = 0; j < 4; j++) {
         let t = 0;
-        for (let k = 0; k < a.COLS; k++) {
-          t += a.get(y, k) * b.get(k, x);
+        for (let k = 0; k < 4; k++) {
+          t += a._data[4 * i + k] * b._data[4 * k + j];
         }
-        result.set(y, x, t);
+        result._data[4 * i + j] = t;
       }
     }
 
@@ -295,7 +306,24 @@ export class Matrix4x4 {
     ]);
   }
 
-  static ortho(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number): Matrix4x4 {
+  /**
+   * Generates orthogprahic projection matrix for Left Handed and Z axis of NDC is between [-1, 1]
+   * @param left
+   * @param right
+   * @param bottom
+   * @param top
+   * @param zNear
+   * @param zFar
+   * @returns
+   */
+  static ortho(
+    left: number,
+    right: number,
+    bottom: number,
+    top: number,
+    zNear: number,
+    zFar: number,
+  ): Matrix4x4 {
     const m00 = 2.0 / (right - left);
     const m11 = 2.0 / (top - bottom);
     const m22 = 1.0 / (zFar - zNear);
@@ -311,16 +339,25 @@ export class Matrix4x4 {
     ]);
   }
 
+  /**
+   * Generates perspective projection matrix for Left Handed and Z axis of NDC is between [-1, 1]
+   * @param fov_degree Field of view in degree
+   * @param aspect width / height of screen
+   * @param zNear distance from the viewer to the near clipping plane (positive)
+   * @param zFar distance from the viewer to the far clipping plane (positive)
+   * @returns
+   */
   static perspective(fov_degree: number, aspect: number, zNear: number, zFar: number): Matrix4x4 {
     const fov_rad = fov_degree * (Math.PI / 180);
 
     const fovY = 1 / Math.tan(fov_rad / 2);
     const fovX = fovY / aspect;
+    const zRange = zFar - zNear;
 
     const m00 = fovX;
     const m11 = fovY;
-    const m22 = zFar / (zFar - zNear);
-    const m32 = -zNear * (zFar / (zFar - zNear));
+    const m22 = zFar / zRange;
+    const m32 = -((zFar * zNear) / zRange);
 
     return new Matrix4x4([
       [m00, 0, 0, 0],
@@ -358,8 +395,8 @@ export class Matrix4x4 {
 // const scaled = test.scale(0.5, 0.5, 0.5);
 // console.log(scaled);
 
-const quat = Quaternion.fromEuler(30, 30, 30);
-console.log(quat);
+// const quat = Quaternion.fromEuler(30, 30, 30);
+// console.log(quat);
 
-const test = Matrix4x4.fromQuaternion(quat);
-console.log(test);
+// const test = Matrix4x4.fromQuaternion(quat);
+// console.log(test);
