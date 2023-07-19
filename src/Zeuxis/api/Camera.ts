@@ -1,6 +1,5 @@
 import { Matrix4x4, Vector3 } from '../math';
 import { Quaternion } from '../math/Quaternion';
-import { mat4, quat } from 'gl-matrix';
 
 enum ProjectionType {
   Orthographic,
@@ -21,7 +20,7 @@ export class Camera {
 
   constructor(pT: ProjectionType = ProjectionType.Perspective) {
     this._projectionType = pT;
-    this._aspect = 100 / 100;
+    this._aspect = 1;
 
     this.calculateProjectionMatrix();
     this.calculateViewMatrix();
@@ -29,6 +28,11 @@ export class Camera {
 
   get position(): Vector3 {
     return this._position;
+  }
+
+  set aspect(a: number) {
+    this._aspect = a;
+    this.calculateProjectionMatrix();
   }
 
   calculateProjectionMatrix() {

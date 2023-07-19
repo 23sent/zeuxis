@@ -9,22 +9,26 @@ import { Shader } from './Shader';
  */
 
 export class Renderer {
-  // TODO: depth buffer
-
-  buffer: Uint8ClampedArray;
-
-  private _shader: Shader = new Shader();
+  buffer: Uint8ClampedArray = new Uint8ClampedArray();
+  zBuffer: Float32Array = new Float32Array();
+  shader: Shader = new Shader();
 
   constructor(public width: number, public height: number) {
+    this.setViewportSize(width, height);
+  }
+
+  setViewportSize(width: number, height: number) {
+    this.width = width;
+    this.height = height;
+
     this.buffer = new Uint8ClampedArray(width * height * 4);
+    this.zBuffer = new Float32Array(width * height);
+
+    this.clearDepthBuffer();
   }
 
-  get shader(): Shader {
-    return this._shader;
-  }
-
-  set shader(s: Shader) {
-    this._shader = s;
+  clearDepthBuffer() {
+    for (let i = 0; i < this.zBuffer.length; i++) this.zBuffer[i] = Infinity;
   }
 
   clearBuffer(): void {
@@ -40,13 +44,25 @@ export class Renderer {
     }
   }
 
-  edgeFunction(a: Vector2, b: Vector2, c: Vector2): boolean {
-    return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x) <= 0;
+  getBarycentricCoords(a: Vector3, b: Vector3, c: Vector3, p: Vector3): Vector3 {
+    const v0 = b.substract(a);
+    const v1 = c.substract(a);
+    const v2 = p.substract(a);
+    const d00 = v0.dot(v0);
+    const d01 = v0.dot(v1);
+    const d11 = v1.dot(v1);
+    const d20 = v2.dot(v0);
+    const d21 = v2.dot(v1);
+    const det = d00 * d11 - d01 * d01;
+    const v = (d11 * d20 - d01 * d21) / det;
+    const w = (d00 * d21 - d01 * d20) / det;
+    const u = 1.0 - v - w;
+    return new Vector3(u, v, w);
   }
 
   drawMesh(mesh: Mesh<Vertex>): void {
     loop: for (let i = 0; i < mesh.indicies.length; i += 3) {
-      const corners = new Array<Vector2>(3);
+      const corners = new Array<Vector3>(3);
 
       for (let j = 0; j < 3; j++) {
         const vertexIndex = mesh.indicies[i + j];
@@ -54,7 +70,7 @@ export class Renderer {
         this.drawPoint(vertex);
 
         // Apply Vertex Shader
-        const vsOutput = this._shader.vertexShader(vertex);
+        const vsOutput = this.shader.vertexShader(vertex);
         const clipSpace = vsOutput.clip_space_position;
 
         // if (
@@ -81,41 +97,31 @@ export class Renderer {
         );
 
         // To rasterized coordinates
-        const rasterSpace = new Vector2(
+        const rasterSpace = new Vector3(
           Math.floor((NDCSpace.x + 1) * 0.5 * (this.width - 1)),
           Math.floor((1 - (NDCSpace.y + 1) * 0.5) * (this.height - 1)),
+          NDCSpace.z,
         );
 
         corners[j] = rasterSpace;
       }
 
-      // Draw Point
-      // const bufferIndex = (rasterSpace.y * this.width + rasterSpace.x) * 4;
-
-      // // Apply fragment shader
-      // const fsOutput = this._shader.fragmentShader(vsOutput);
-      // const color = fsOutput.fragment_color;
-
-      // this.buffer[bufferIndex + 0] = color.red;
-      // this.buffer[bufferIndex + 1] = color.green;
-      // this.buffer[bufferIndex + 2] = color.blue;
-      // this.buffer[bufferIndex + 3] = color.alpha;
-
-      const point = new Vector2();
+      const point = new Vector3();
       for (let index = 0; index < this.buffer.length; index += 4) {
-        const i = index / 4;
-        point.x = i % this.width;
-        point.y = Math.floor(i / this.height);
+        const pixelIndex = index / 4;
+        point.x = pixelIndex % this.width;
+        point.y = Math.floor(pixelIndex / this.height);
 
-        let inside = true;
-        inside = inside && this.edgeFunction(corners[0], corners[1], point);
-        inside = inside && this.edgeFunction(corners[1], corners[2], point);
-        inside = inside && this.edgeFunction(corners[2], corners[0], point);
+        const barycentric = this.getBarycentricCoords(corners[0], corners[1], corners[2], point);
+        point.z = barycentric.x * corners[0].z + barycentric.y * corners[1].z + barycentric.z * corners[2].z;
 
-        const fsOutput = this._shader.fragmentShader({ clip_space_position: new Vector4() });
+        const fsOutput = this.shader.fragmentShader({ clip_space_position: new Vector4() });
         const color = fsOutput.fragment_color;
 
-        if (inside) {
+        if (barycentric.x >= 0 && barycentric.y >= 0 && barycentric.z >= 0) {
+          if (this.zBuffer[pixelIndex] < point.z) continue;
+          else this.zBuffer[pixelIndex] = point.z;
+
           this.buffer[index + 0] = color.red;
           this.buffer[index + 1] = color.green;
           this.buffer[index + 2] = color.blue;
@@ -127,7 +133,7 @@ export class Renderer {
 
   drawPoint(vertex: Vertex) {
     // Apply Vertex Shader
-    const vsOutput = this._shader.vertexShader(vertex);
+    const vsOutput = this.shader.vertexShader(vertex);
     const clipSpace = vsOutput.clip_space_position;
 
     if (
@@ -158,7 +164,7 @@ export class Renderer {
     const bufferIndex = (rasterSpace.y * this.width + rasterSpace.x) * 4;
 
     //  Apply fragment shader
-    const fsOutput = this._shader.fragmentShader(vsOutput);
+    const fsOutput = this.shader.fragmentShader(vsOutput);
     const color = fsOutput.fragment_color;
 
     this.buffer[bufferIndex + 0] = color.red;
@@ -168,6 +174,7 @@ export class Renderer {
   }
 
   switchBuffer(): Uint8ClampedArray {
+    this.clearDepthBuffer();
     return this.buffer;
   }
 }

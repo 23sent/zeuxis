@@ -1,6 +1,6 @@
 import { Vertex } from './Vertex';
 
-export class Mesh<T extends Vertex> {
+export class Mesh<T extends Vertex = Vertex> {
   verticies: Array<T>;
   indicies: Uint16Array;
 
