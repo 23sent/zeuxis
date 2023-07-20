@@ -1,4 +1,4 @@
-import { Matrix4x4, Vector3 } from '../math';
+import { Matrix4x4, Vector3, Vector4 } from '../math';
 import { Quaternion } from '../math/Quaternion';
 
 enum ProjectionType {
@@ -11,8 +11,8 @@ export class Camera {
 
   private _projectionType: ProjectionType;
 
-  private _position: Vector3 = new Vector3(0, 0, -1);
-  private _rotation: Vector3 = new Vector3(0, 0, 0);
+  private _position: Vector3 = new Vector3(0, 0, 0);
+  private _rotation: Vector3 = new Vector3(0, 0, 0); // eular angales
   private _aspect: number = 1;
 
   private _projection: Matrix4x4 = new Matrix4x4();
@@ -62,5 +62,18 @@ export class Camera {
 
   getViewProjectionMatrix(): Matrix4x4 {
     return this._view.multiply(this._projection);
+  }
+
+  move(p: Vector3) {
+    const pos = new Vector4(p);
+    this._position = this._position.add(
+      new Vector3(pos.multiply(Matrix4x4.fromQuaternion(Quaternion.fromEuler(this._rotation)))),
+    );
+    this.calculateViewMatrix();
+  }
+
+  rotate(r: Vector3) {
+    this._rotation = this._rotation.add(r);
+    this.calculateViewMatrix();
   }
 }

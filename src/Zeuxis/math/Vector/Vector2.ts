@@ -4,9 +4,17 @@ export class Vector2 {
   public x: number;
   public y: number;
 
-  constructor(x: number = 0, y: number = 0) {
-    this.x = x;
-    this.y = y;
+  constructor(x: number | Vector2 | number[] = 0, y: number = 0) {
+    if (x instanceof Vector2) {
+      this.x = x.x;
+      this.y = x.y;
+    } else if (x instanceof Array) {
+      this.x = x[0] || 0;
+      this.y = x[1] || 0;
+    } else {
+      this.x = x;
+      this.y = y;
+    }
   }
 
   // Operations

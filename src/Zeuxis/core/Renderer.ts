@@ -63,6 +63,9 @@ export class Renderer {
   drawMesh(mesh: Mesh<Vertex>): void {
     loop: for (let i = 0; i < mesh.indicies.length; i += 3) {
       const corners = new Array<Vector3>(3);
+      const v1 = mesh.verticies[mesh.indicies[i + 0]];
+      const v2 = mesh.verticies[mesh.indicies[i + 1]];
+      const v3 = mesh.verticies[mesh.indicies[i + 2]];
 
       for (let j = 0; j < 3; j++) {
         const vertexIndex = mesh.indicies[i + j];
@@ -115,10 +118,17 @@ export class Renderer {
         const barycentric = this.getBarycentricCoords(corners[0], corners[1], corners[2], point);
         point.z = barycentric.x * corners[0].z + barycentric.y * corners[1].z + barycentric.z * corners[2].z;
 
-        const fsOutput = this.shader.fragmentShader({ clip_space_position: new Vector4() });
-        const color = fsOutput.fragment_color;
-
         if (barycentric.x >= 0 && barycentric.y >= 0 && barycentric.z >= 0) {
+          let uv;
+          if (v1.texCoord && v2.texCoord && v3.texCoord) {
+            uv = new Vector2(
+              barycentric.x * v1.texCoord.x + barycentric.y * v2.texCoord.x + barycentric.z * v3.texCoord.x,
+              barycentric.x * v1.texCoord.y + barycentric.y * v2.texCoord.y + barycentric.z * v3.texCoord.y,
+            );
+          }
+          const fsOutput = this.shader.fragmentShader({ uv: uv });
+          const color = fsOutput.fragment_color;
+
           if (this.zBuffer[pixelIndex] < point.z) continue;
           else this.zBuffer[pixelIndex] = point.z;
 
@@ -164,7 +174,7 @@ export class Renderer {
     const bufferIndex = (rasterSpace.y * this.width + rasterSpace.x) * 4;
 
     //  Apply fragment shader
-    const fsOutput = this.shader.fragmentShader(vsOutput);
+    const fsOutput = this.shader.fragmentShader({});
     const color = fsOutput.fragment_color;
 
     this.buffer[bufferIndex + 0] = color.red;

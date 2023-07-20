@@ -1,5 +1,5 @@
 import { Camera, Color, Mesh, Renderer, Vector3, Vertex } from '../Zeuxis';
-import { OBJLoader } from '../Zeuxis/loaders';
+import { OBJLoader, TextureLoader } from '../Zeuxis/loaders';
 import { MyShader } from './MyShader';
 
 const renderer = new Renderer(100, 100);
@@ -10,17 +10,13 @@ const triangle = Mesh.fromArrays(
   [0, 1, 2],
 );
 const triangle2 = Mesh.fromArrays(
-  [new Vertex([-0.3, 0, 1]), new Vertex([0.6, 0.5, 1]), new Vertex([1.5, 0, 1])],
+  [new Vertex([-0.3, 0, 1], [0, 0]), new Vertex([0.6, 0.5, 1], [0, 1]), new Vertex([1.5, 0, 1], [1, 0])],
   [0, 1, 2],
 );
 
 const shader = new MyShader();
 const camera = new Camera(Camera.Types.Perspective);
-
-document.addEventListener('wheel', (ev: WheelEvent) => {
-  const v = ev.deltaY / 1000;
-  camera.setPosition(new Vector3(0, 0, camera.position.z + v));
-});
+camera.setPosition(new Vector3(0, 0, -2));
 
 let lastRenderTime = 0;
 let nextFrameId = 0;
@@ -36,13 +32,58 @@ let cube = new Mesh(0, 0);
  * Pyramid
  *  https://raw.githubusercontent.com/erik/obj-viewer/master/models/pyramid.obj
  */
-// OBJLoader('https://raw.githubusercontent.com/erik/obj-viewer/master/models/pyramid.obj').then((obj) => {
-//   console.log(obj);
-//   cube = Mesh.fromArrays(
-//     obj.vertices.map((v) => new Vertex(v.position)),
-//     obj.indices,
-//   );
-// });
+OBJLoader('./assets/cube.obj').then((obj) => {
+  cube = Mesh.fromArrays(
+    obj.vertices.map((v) => new Vertex(v.position, v.textCoord)),
+    obj.indices,
+  );
+});
+
+let texture: ImageData;
+TextureLoader('./assets/container.jpg').then((m) => {
+  texture = m;
+});
+
+function initControls() {
+  document.addEventListener('wheel', (e: WheelEvent) => {
+    const v = e.deltaY / 1000;
+    camera.move(new Vector3(0, 0, v));
+  });
+
+  document.addEventListener('keydown', (e: KeyboardEvent) => {
+    const cameraSpeed = 0.5;
+    if (e.key === 'w') {
+      camera.move(new Vector3(0, 1, 0).multiply(cameraSpeed));
+    }
+    if (e.key === 's') {
+      camera.move(new Vector3(0, -1, 0).multiply(cameraSpeed));
+    }
+    if (e.key === 'a') {
+      camera.move(new Vector3(-1, 0, 0).multiply(cameraSpeed));
+    }
+    if (e.key === 'd') {
+      camera.move(new Vector3(1, 0, 0).multiply(cameraSpeed));
+    }
+
+    if (e.key === 'e') {
+      camera.rotate(new Vector3(0, -0.5, 0));
+    }
+
+    if (e.key === 'q') {
+      camera.rotate(new Vector3(0, 0.5, 0));
+    }
+
+    if (e.key === 'e') {
+      camera.rotate(new Vector3(0, 0, -0.5));
+    }
+
+    if (e.key === 'q') {
+      camera.rotate(new Vector3(0, 0, 0.5));
+    }
+  });
+}
+
+initControls();
 
 export let frameCount = 0;
 export let fps = 0;
@@ -64,6 +105,7 @@ export function start() {
   renderer.fillBuffer(new Color(0, 0, 0, 0));
 
   renderer.shader = shader;
+  shader.texture = texture;
   shader.viewProjectionMatrix = camera.getViewProjectionMatrix();
 
   shader.fragColor = new Color(255, 0, 0);
@@ -71,7 +113,11 @@ export function start() {
   // shader.fragColor = new Color(0, 255, 0);
   // renderer.drawMesh(triangle2);
 
+  // renderer.drawMesh(cube);
+  shader.fragColor = new Color(255, 0, 0);
+  // renderer.drawMesh(Mesh.QuadMesh);
   renderer.drawMesh(cube);
+  // renderer.drawMesh(triangle2);
 
   renderCallback(renderer.switchBuffer());
 

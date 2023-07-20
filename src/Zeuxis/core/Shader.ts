@@ -19,7 +19,7 @@ export class Shader {
     };
   }
 
-  fragmentShader(input: VertexShaderOutput): FragmentShaderOutput {
+  fragmentShader(input: any): FragmentShaderOutput {
     return { fragment_color: new Color(0, 0, 0) };
   }
 }

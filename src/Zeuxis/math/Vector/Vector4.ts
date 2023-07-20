@@ -1,5 +1,6 @@
 // Implemented according (and thanks) to "Game Physics Cookbook - Gabor Szauer"
 
+import { inherits } from 'util';
 import { Matrix4x4 } from '../Matrix';
 import { Vector3 } from './Vector3';
 
@@ -9,12 +10,7 @@ export class Vector4 {
   public z: number;
   public w: number;
 
-  constructor(
-    x: number | Vector3 | Vector4 | number[] = 0,
-    y: number = 0,
-    z: number = 0,
-    w: number = 0,
-  ) {
+  constructor(x: number | Vector3 | Vector4 | number[] = 0, y: number = 0, z: number = 0, w: number = 0) {
     if (x instanceof Vector4) {
       this.x = x.x;
       this.y = x.y;

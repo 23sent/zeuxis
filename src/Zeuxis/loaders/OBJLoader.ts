@@ -25,7 +25,6 @@ export async function OBJParser(content: string) {
     const [startingChar, ...data] = line.split(/\s+/);
     switch (startingChar) {
       case 'v':
-        console.log(data);
         cachedVertices.push(data.map(parseFloat));
         break;
       case 'vt':
@@ -68,7 +67,12 @@ export async function OBJParser(content: string) {
   return mesh;
 }
 
-export async function OBJLoader(filepath: string) {
-  const content = await FileLoader(filepath);
+export async function OBJLoader(filepath: string): Promise<ObjMesh> {
+  const file = await FileLoader(filepath);
+  const content = await file.text();
+  if (content.length === 0) {
+    throw new Error(`${filepath} File is empty.`);
+  }
+
   return OBJParser(content);
 }

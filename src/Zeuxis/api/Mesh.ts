@@ -19,4 +19,14 @@ export class Mesh<T extends Vertex = Vertex> {
   getVertex(index: number): T {
     return this.verticies[this.indicies[index]];
   }
+
+  static QuadMesh: Mesh = Mesh.fromArrays(
+    [
+      new Vertex([+0.5, +0.5, 0.0], [1, 1]),
+      new Vertex([+0.5, -0.5, 0.0], [1, 0]),
+      new Vertex([-0.5, -0.5, 0.0], [0, 0]),
+      new Vertex([-0.5, +0.5, 0.0], [0, 1]),
+    ],
+    [0, 1, 3, 1, 2, 3],
+  );
 }

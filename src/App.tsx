@@ -1,16 +1,18 @@
 import React, { useEffect, useRef } from 'react';
 import './App.css';
 import * as main from './Example/main';
+import { resizeImageBuffer } from './Zeuxis';
+import { TextureLoader } from './Zeuxis/loaders';
 
 function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRateRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    function render(buffer: Uint8ClampedArray) {
+    function render(b: Uint8ClampedArray) {
       if (canvasRef.current && frameRateRef.current) {
-        // create ImageData instance
-        const iData = new ImageData(buffer, 500, 500);
+        // Create ImageData instance
+        const iData = new ImageData(resizeImageBuffer(b, 250, 250, 2), 500, 500);
         const ctx = canvasRef.current.getContext('2d');
         ctx?.putImageData(iData, 0, 0);
 
@@ -18,9 +20,8 @@ function App() {
       }
     }
 
-    main.setViewportSize(500, 500);
+    main.setViewportSize(250, 250);
     main.setRenderCallback(render);
-    // main.start();
 
     return () => {
       main.stop();

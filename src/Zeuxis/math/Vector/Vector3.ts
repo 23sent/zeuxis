@@ -7,8 +7,8 @@ export class Vector3 {
   public y: number;
   public z: number;
 
-  constructor(x: number | Vector3 | number[] = 0, y: number = 0, z: number = 0) {
-    if (x instanceof Vector3) {
+  constructor(x: number | Vector3 | Vector4 | number[] = 0, y: number = 0, z: number = 0) {
+    if (x instanceof Vector3 || x instanceof Vector4) {
       this.x = x.x;
       this.y = x.y;
       this.z = x.z;
@@ -57,11 +57,7 @@ export class Vector3 {
   }
 
   cross(v: Vector3): Vector3 {
-    return new Vector3(
-      this.y * v.z - this.z * v.y,
-      this.z * v.x - this.x * v.z,
-      this.x * v.y - this.y * v.x,
-    );
+    return new Vector3(this.y * v.z - this.z * v.y, this.z * v.x - this.x * v.z, this.x * v.y - this.y * v.x);
   }
 
   distance(v: Vector3): number {
