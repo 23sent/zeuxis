@@ -108,7 +108,7 @@ export function start() {
   shader.texture = texture;
   shader.viewProjectionMatrix = camera.getViewProjectionMatrix();
 
-  shader.fragColor = new Color(255, 0, 0);
+  // shader.fragColor = new Color(255, 0, 0);
   // renderer.drawMesh(triangle);
   // shader.fragColor = new Color(0, 255, 0);
   // renderer.drawMesh(triangle2);
@@ -117,6 +117,7 @@ export function start() {
   shader.fragColor = new Color(255, 0, 0);
   // renderer.drawMesh(Mesh.QuadMesh);
   renderer.drawMesh(cube);
+
   // renderer.drawMesh(triangle2);
 
   renderCallback(renderer.switchBuffer());

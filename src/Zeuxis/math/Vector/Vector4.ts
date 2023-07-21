@@ -1,6 +1,5 @@
 // Implemented according (and thanks) to "Game Physics Cookbook - Gabor Szauer"
 
-import { inherits } from 'util';
 import { Matrix4x4 } from '../Matrix';
 import { Vector3 } from './Vector3';
 
@@ -68,6 +67,14 @@ export class Vector4 {
       );
     } else {
       return new Vector4(this.x * v, this.y * v, this.z * v, this.w * v);
+    }
+  }
+
+  divide(v: Vector4 | number): Vector4 {
+    if (v instanceof Vector4) {
+      return new Vector4(this.x / v.x, this.y / v.y, this.z / v.z, this.w / v.w);
+    } else {
+      return new Vector4(this.x / v, this.y / v, this.z / v, this.w / v);
     }
   }
 

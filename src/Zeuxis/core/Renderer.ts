@@ -62,68 +62,82 @@ export class Renderer {
 
   drawMesh(mesh: Mesh<Vertex>): void {
     loop: for (let i = 0; i < mesh.indicies.length; i += 3) {
-      const corners = new Array<Vector3>(3);
+      // Verticies
       const v1 = mesh.verticies[mesh.indicies[i + 0]];
       const v2 = mesh.verticies[mesh.indicies[i + 1]];
       const v3 = mesh.verticies[mesh.indicies[i + 2]];
 
-      for (let j = 0; j < 3; j++) {
-        const vertexIndex = mesh.indicies[i + j];
-        const vertex = mesh.verticies[vertexIndex];
-        this.drawPoint(vertex);
+      // Apply vertex shader
+      const vsOutput1 = this.shader.vertexShader(v1);
+      const vsOutput2 = this.shader.vertexShader(v2);
+      const vsOutput3 = this.shader.vertexShader(v3);
 
-        // Apply Vertex Shader
-        const vsOutput = this.shader.vertexShader(vertex);
-        const clipSpace = vsOutput.clip_space_position;
+      // Clip Space Coordinates
+      const c1 = vsOutput1.clip_space_position;
+      const c2 = vsOutput2.clip_space_position;
+      const c3 = vsOutput3.clip_space_position;
 
-        // if (
-        //   clipSpace.w <= 0 ||
-        //   clipSpace.x < -clipSpace.w ||
-        //   clipSpace.x > clipSpace.w ||
-        //   clipSpace.y < -clipSpace.w ||
-        //   clipSpace.y > clipSpace.w ||
-        //   clipSpace.z < -clipSpace.w ||
-        //   clipSpace.z > clipSpace.w
-        // ) {
-        //   continue loop;
-        // }
+      // Clip triangle if at least one vertex is outisde
+      if (c1.w <= 0 || c1.z < -c1.w || c1.z > c1.w) continue loop;
+      if (c2.w <= 0 || c2.z < -c2.w || c2.z > c2.w) continue loop;
+      if (c3.w <= 0 || c3.z < -c3.w || c3.z > c3.w) continue loop;
 
-        if (clipSpace.w <= 0 || clipSpace.z < -clipSpace.w || clipSpace.z > clipSpace.w) {
-          continue loop;
-        }
-
-        // To Normalized Display Coordinates space
-        const NDCSpace = new Vector3(
-          clipSpace.x / clipSpace.w,
-          clipSpace.y / clipSpace.w,
-          clipSpace.z / clipSpace.w,
-        );
-
-        // To rasterized coordinates
-        const rasterSpace = new Vector3(
-          Math.floor((NDCSpace.x + 1) * 0.5 * (this.width - 1)),
-          Math.floor((1 - (NDCSpace.y + 1) * 0.5) * (this.height - 1)),
-          NDCSpace.z,
-        );
-
-        corners[j] = rasterSpace;
+      // If texture coords exists
+      let t1, t2, t3;
+      if (v1.texCoord && v2.texCoord && v3.texCoord) {
+        t1 = new Vector3(v1.texCoord, 1).divide(c1.w);
+        t2 = new Vector3(v2.texCoord, 1).divide(c2.w);
+        t3 = new Vector3(v3.texCoord, 1).divide(c3.w);
       }
 
-      const point = new Vector3();
-      for (let index = 0; index < this.buffer.length; index += 4) {
+      // Normalized Display Coordinates (ranges:  x[-1, 1], y[-1, 1], z[-1, 1],  left handed)
+      const n1 = new Vector3(c1.x / c1.w, c1.y / c1.w, c1.z / c1.w);
+      const n2 = new Vector3(c2.x / c2.w, c2.y / c2.w, c2.z / c2.w);
+      const n3 = new Vector3(c3.x / c3.w, c3.y / c3.w, c3.z / c3.w);
+
+      // Screen Space Coordinates
+      const r1 = new Vector3(
+        Math.floor((n1.x + 1) * 0.5 * (this.width - 1)),
+        Math.floor((1 - (n1.y + 1) * 0.5) * (this.height - 1)),
+        n1.z,
+      );
+      const r2 = new Vector3(
+        Math.floor((n2.x + 1) * 0.5 * (this.width - 1)),
+        Math.floor((1 - (n2.y + 1) * 0.5) * (this.height - 1)),
+        n2.z,
+      );
+      const r3 = new Vector3(
+        Math.floor((n3.x + 1) * 0.5 * (this.width - 1)),
+        Math.floor((1 - (n3.y + 1) * 0.5) * (this.height - 1)),
+        n3.z,
+      );
+
+      // Bounding box of triangle
+      const minX = Math.min(r1.x, r2.x, r3.x);
+      const maxX = Math.max(r1.x, r2.x, r3.x);
+      const minY = Math.min(r1.y, r2.y, r3.y);
+      const maxY = Math.max(r1.y, r2.y, r3.y);
+      const startPixelIndex = Math.max(0, Math.min(this.buffer.length, (minY * this.width + minX) * 4));
+      const endPixelIndex = Math.max(0, Math.min(this.buffer.length, (maxY * this.width + maxX) * 4));
+
+      for (let index = startPixelIndex; index < endPixelIndex; index += 4) {
         const pixelIndex = index / 4;
+
+        const point = new Vector3();
         point.x = pixelIndex % this.width;
         point.y = Math.floor(pixelIndex / this.height);
 
-        const barycentric = this.getBarycentricCoords(corners[0], corners[1], corners[2], point);
-        point.z = barycentric.x * corners[0].z + barycentric.y * corners[1].z + barycentric.z * corners[2].z;
+        const barycentric = this.getBarycentricCoords(r1, r2, r3, point);
+        point.z = barycentric.x * r1.z + barycentric.y * r2.z + barycentric.z * r3.z;
 
         if (barycentric.x >= 0 && barycentric.y >= 0 && barycentric.z >= 0) {
           let uv;
-          if (v1.texCoord && v2.texCoord && v3.texCoord) {
+          if (t1 && t2 && t3) {
+            // perpective correct interpolation for texture
+            const wt = barycentric.x * t1.z + barycentric.y * t2.z + barycentric.z * t3.z;
             uv = new Vector2(
-              barycentric.x * v1.texCoord.x + barycentric.y * v2.texCoord.x + barycentric.z * v3.texCoord.x,
-              barycentric.x * v1.texCoord.y + barycentric.y * v2.texCoord.y + barycentric.z * v3.texCoord.y,
+              (barycentric.x * t1.x + barycentric.y * t2.x + barycentric.z * t3.x) / wt,
+              (barycentric.x * t1.y + barycentric.y * t2.y + barycentric.z * t3.y) / wt,
             );
           }
           const fsOutput = this.shader.fragmentShader({ uv: uv });
@@ -140,6 +154,8 @@ export class Renderer {
       }
     }
   }
+
+  drawLine(v1: Vertex, v2: Vertex) {}
 
   drawPoint(vertex: Vertex) {
     // Apply Vertex Shader

@@ -1,5 +1,6 @@
 // Implemented according (and thanks) to "Game Physics Cookbook - Gabor Szauer"
 
+import { Vector2 } from './Vector2';
 import { Vector4 } from './Vector4';
 
 export class Vector3 {
@@ -7,8 +8,12 @@ export class Vector3 {
   public y: number;
   public z: number;
 
-  constructor(x: number | Vector3 | Vector4 | number[] = 0, y: number = 0, z: number = 0) {
-    if (x instanceof Vector3 || x instanceof Vector4) {
+  constructor(x: number | Vector2 | Vector3 | Vector4 | number[] = 0, y: number = 0, z: number = 0) {
+    if (x instanceof Vector2) {
+      this.x = x.x;
+      this.y = x.y;
+      this.z = y;
+    } else if (x instanceof Vector3 || x instanceof Vector4) {
       this.x = x.x;
       this.y = x.y;
       this.z = x.z;
@@ -45,6 +50,14 @@ export class Vector3 {
       return new Vector3(this.x * v.x, this.y * v.y, this.z * v.z);
     } else {
       return new Vector3(this.x * v, this.y * v, this.z * v);
+    }
+  }
+
+  divide(v: Vector3 | number): Vector3 {
+    if (v instanceof Vector3) {
+      return new Vector3(this.x / v.x, this.y / v.y, this.z / v.z);
+    } else {
+      return new Vector3(this.x / v, this.y / v, this.z / v);
     }
   }
 

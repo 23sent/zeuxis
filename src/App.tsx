@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from 'react';
 import './App.css';
 import * as main from './Example/main';
 import { resizeImageBuffer } from './Zeuxis';
-import { TextureLoader } from './Zeuxis/loaders';
 
 function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
