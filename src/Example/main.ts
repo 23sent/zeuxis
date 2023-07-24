@@ -1,8 +1,12 @@
-import { Camera, Color, Mesh, Renderer, Vector3, Vertex } from '../Zeuxis';
+import { render } from 'react-dom';
+import { Camera, Color, Matrix4x4, Mesh, Renderer, Vector3, Vertex } from '../Zeuxis';
 import { OBJLoader, TextureLoader } from '../Zeuxis/loaders';
 import { MyShader } from './MyShader';
+import { Quaternion } from '../Zeuxis/math/Quaternion';
 
 const renderer = new Renderer(100, 100);
+renderer.WIREFRAME = false;
+
 const objects = new Array<Mesh>();
 
 const triangle = Mesh.fromArrays(
@@ -15,12 +19,14 @@ const triangle2 = Mesh.fromArrays(
 );
 
 const shader = new MyShader();
+// shader.transform = new Matrix4x4().translate(0, -0.1, 0).multiply(new Matrix4x4().scale(10, 10, 10));
+
 const camera = new Camera(Camera.Types.Perspective);
 camera.setPosition(new Vector3(0, 0, -2));
 
-let lastRenderTime = 0;
 let nextFrameId = 0;
-let renderCallback: (buffer: Uint8ClampedArray) => void = (b: Uint8ClampedArray) => console.log(frameCount);
+let renderCallback: (buffer: Uint8ClampedArray, r: Renderer) => void = (b: Uint8ClampedArray, r: Renderer) =>
+  console.log(r.fps);
 
 let cube = new Mesh(0, 0);
 
@@ -51,42 +57,39 @@ function initControls() {
   });
 
   document.addEventListener('keydown', (e: KeyboardEvent) => {
-    const cameraSpeed = 0.5;
+    const cameraSpeed = 1 * renderer.deltaTime;
     if (e.key === 'w') {
-      camera.move(new Vector3(0, 1, 0).multiply(cameraSpeed));
+      camera.move(new Vector3(0, cameraSpeed, 0));
     }
     if (e.key === 's') {
-      camera.move(new Vector3(0, -1, 0).multiply(cameraSpeed));
+      camera.move(new Vector3(0, -cameraSpeed, 0));
     }
     if (e.key === 'a') {
-      camera.move(new Vector3(-1, 0, 0).multiply(cameraSpeed));
+      camera.move(new Vector3(-cameraSpeed, 0, 0));
     }
     if (e.key === 'd') {
-      camera.move(new Vector3(1, 0, 0).multiply(cameraSpeed));
+      camera.move(new Vector3(cameraSpeed, 0, 0));
     }
 
     if (e.key === 'e') {
-      camera.rotate(new Vector3(0, -0.5, 0));
+      camera.rotate(new Vector3(0, -25 * cameraSpeed, 0));
     }
 
     if (e.key === 'q') {
-      camera.rotate(new Vector3(0, 0.5, 0));
+      camera.rotate(new Vector3(0, 25 * cameraSpeed, 0));
     }
 
-    if (e.key === 'e') {
-      camera.rotate(new Vector3(0, 0, -0.5));
+    if (e.key === '1') {
+      camera.rotate(new Vector3(-25 * cameraSpeed, 0, 0));
     }
 
-    if (e.key === 'q') {
-      camera.rotate(new Vector3(0, 0, 0.5));
+    if (e.key === '2') {
+      camera.rotate(new Vector3(25 * cameraSpeed, 0, 0));
     }
   });
 }
 
 initControls();
-
-export let frameCount = 0;
-export let fps = 0;
 
 export function addObject(obj: Mesh) {
   objects.push(obj);
@@ -97,7 +100,7 @@ export function setViewportSize(w: number, h: number) {
   renderer.setViewportSize(w, h);
 }
 
-export function setRenderCallback(render: (buffer: Uint8ClampedArray) => void) {
+export function setRenderCallback(render: (buffer: Uint8ClampedArray, renderer: Renderer) => void) {
   renderCallback = render;
 }
 
@@ -105,10 +108,19 @@ export function start() {
   renderer.fillBuffer(new Color(0, 0, 0, 0));
 
   renderer.shader = shader;
+
+  // Rotate over time
+  // shader.transform = shader.transform.multiply(
+  //   Matrix4x4.axisAngle(new Vector3(0, 1, 0), 1 * renderer.deltaTime),
+  // );
+  shader.transform = shader.transform.multiply(
+    Matrix4x4.fromQuaternion(Quaternion.fromEuler(0, 30 * renderer.deltaTime, 0)),
+  );
+
   shader.texture = texture;
   shader.viewProjectionMatrix = camera.getViewProjectionMatrix();
 
-  // shader.fragColor = new Color(255, 0, 0);
+  shader.fragColor = new Color(0, 0, 255);
   // renderer.drawMesh(triangle);
   // shader.fragColor = new Color(0, 255, 0);
   // renderer.drawMesh(triangle2);
@@ -117,15 +129,10 @@ export function start() {
   shader.fragColor = new Color(255, 0, 0);
   // renderer.drawMesh(Mesh.QuadMesh);
   renderer.drawMesh(cube);
-
   // renderer.drawMesh(triangle2);
 
-  renderCallback(renderer.switchBuffer());
+  renderCallback(renderer.switchBuffer(), renderer);
 
-  const time = window.performance.now();
-  fps = (1 / (time - lastRenderTime)) * 1000;
-  lastRenderTime = time;
-  frameCount++;
   nextFrameId = requestAnimationFrame(() => start());
 }
 

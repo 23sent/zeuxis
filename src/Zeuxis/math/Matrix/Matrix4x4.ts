@@ -104,38 +104,22 @@ export class Matrix4x4 {
 
     // minor_yx -> Minor of row y, col x
     const minor_00 =
-      this._data[5] * det_10_11_14_15 -
-      this._data[6] * det_9_11_13_15 +
-      this._data[7] * det_9_10_13_14;
+      this._data[5] * det_10_11_14_15 - this._data[6] * det_9_11_13_15 + this._data[7] * det_9_10_13_14;
     const minor_01 =
-      this._data[4] * det_10_11_14_15 -
-      this._data[6] * det_8_11_12_15 +
-      this._data[7] * det_8_10_12_14;
+      this._data[4] * det_10_11_14_15 - this._data[6] * det_8_11_12_15 + this._data[7] * det_8_10_12_14;
     const minor_02 =
-      this._data[4] * det_9_11_13_15 -
-      this._data[5] * det_8_11_12_15 +
-      this._data[7] * det_8_9_12_13;
+      this._data[4] * det_9_11_13_15 - this._data[5] * det_8_11_12_15 + this._data[7] * det_8_9_12_13;
     const minor_03 =
-      this._data[4] * det_9_10_13_14 -
-      this._data[5] * det_8_10_12_14 +
-      this._data[6] * det_8_9_12_13;
+      this._data[4] * det_9_10_13_14 - this._data[5] * det_8_10_12_14 + this._data[6] * det_8_9_12_13;
 
     const minor_10 =
-      this._data[1] * det_10_11_14_15 -
-      this._data[2] * det_9_11_13_15 +
-      this._data[3] * det_9_10_13_14;
+      this._data[1] * det_10_11_14_15 - this._data[2] * det_9_11_13_15 + this._data[3] * det_9_10_13_14;
     const minor_11 =
-      this._data[0] * det_10_11_14_15 -
-      this._data[2] * det_8_11_12_15 +
-      this._data[3] * det_8_10_12_14;
+      this._data[0] * det_10_11_14_15 - this._data[2] * det_8_11_12_15 + this._data[3] * det_8_10_12_14;
     const minor_12 =
-      this._data[0] * det_9_11_13_15 -
-      this._data[1] * det_8_11_12_15 +
-      this._data[3] * det_8_9_12_13;
+      this._data[0] * det_9_11_13_15 - this._data[1] * det_8_11_12_15 + this._data[3] * det_8_9_12_13;
     const minor_13 =
-      this._data[0] * det_9_10_13_14 -
-      this._data[1] * det_8_10_12_14 +
-      this._data[2] * det_8_9_12_13;
+      this._data[0] * det_9_10_13_14 - this._data[1] * det_8_10_12_14 + this._data[2] * det_8_9_12_13;
 
     const minor_20 =
       this._data[1] * det_6_7_14_15 - this._data[2] * det_5_7_13_15 + this._data[3] * det_5_6_13_14;

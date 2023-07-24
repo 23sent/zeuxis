@@ -1,9 +1,13 @@
-import { Vector2, Vector3 } from '../math';
+import { Vector2, Vector3, Vector4 } from '../math';
+import { VertexShaderOutput } from '../core';
 
 export class Vertex {
   public position: Vector3;
   public texCoord?: Vector2;
   public normal?: Vector2;
+
+  // Rendering cache
+  public _vsOutput?: VertexShaderOutput;
 
   constructor(p: Vector3 | number[], t?: Vector2 | number[], n?: Vector3 | number[]) {
     this.position = new Vector3(p);

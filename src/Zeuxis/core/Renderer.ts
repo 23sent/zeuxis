@@ -4,14 +4,26 @@ import { Shader } from './Shader';
 
 /**
  * Resources
- * https://www.scratchapixel.com/lessons/3d-basic-rendering/perspective-and-orthographic-projection-matrix
+ *    https://www.scratchapixel.com/lessons/3d-basic-rendering/perspective-and-orthographic-projection-matrix
+ *    https://medium.com/@aminere/software-rendering-from-scratch-f60127a7cd58
  *
+ *  Clipping
+ *    https://fabiensanglard.net/polygon_codec/clippingdocument/Clipping.pdf
+ *    https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=497a973878c87e357ff4741b394eb106eb510177
  */
 
 export class Renderer {
   buffer: Uint8ClampedArray = new Uint8ClampedArray();
   zBuffer: Float32Array = new Float32Array();
   shader: Shader = new Shader();
+
+  deltaTime: number = 1;
+  lastTime: number = 0;
+  fps: number = 0;
+  frameCount: number = 0;
+  elapsedTime: number = 0;
+
+  WIREFRAME = false;
 
   constructor(public width: number, public height: number) {
     this.setViewportSize(width, height);
@@ -61,57 +73,97 @@ export class Renderer {
   }
 
   drawMesh(mesh: Mesh<Vertex>): void {
-    loop: for (let i = 0; i < mesh.indicies.length; i += 3) {
+    for (let i = 0; i < mesh.indicies.length; i += 3) {
       // Verticies
       const v1 = mesh.verticies[mesh.indicies[i + 0]];
       const v2 = mesh.verticies[mesh.indicies[i + 1]];
       const v3 = mesh.verticies[mesh.indicies[i + 2]];
 
-      // Apply vertex shader
-      const vsOutput1 = this.shader.vertexShader(v1);
-      const vsOutput2 = this.shader.vertexShader(v2);
-      const vsOutput3 = this.shader.vertexShader(v3);
+      this.vertexShading(v1, v2, v3);
+    }
+  }
 
-      // Clip Space Coordinates
-      const c1 = vsOutput1.clip_space_position;
-      const c2 = vsOutput2.clip_space_position;
-      const c3 = vsOutput3.clip_space_position;
+  private vertexShading(v1: Vertex, v2: Vertex, v3: Vertex) {
+    // Apply vertex shader
+    v1._vsOutput = this.shader.vertexShader(v1);
+    v2._vsOutput = this.shader.vertexShader(v2);
+    v3._vsOutput = this.shader.vertexShader(v3);
 
-      // Clip triangle if at least one vertex is outisde
-      if (c1.w <= 0 || c1.z < -c1.w || c1.z > c1.w) continue loop;
-      if (c2.w <= 0 || c2.z < -c2.w || c2.z > c2.w) continue loop;
-      if (c3.w <= 0 || c3.z < -c3.w || c3.z > c3.w) continue loop;
+    this.vertexPostProcess(v1, v2, v3);
+  }
 
-      // If texture coords exists
-      let t1, t2, t3;
-      if (v1.texCoord && v2.texCoord && v3.texCoord) {
-        t1 = new Vector3(v1.texCoord, 1).divide(c1.w);
-        t2 = new Vector3(v2.texCoord, 1).divide(c2.w);
-        t3 = new Vector3(v3.texCoord, 1).divide(c3.w);
-      }
+  private vertexPostProcess(v1: Vertex, v2: Vertex, v3: Vertex) {
+    if (!v1._vsOutput || !v2._vsOutput || !v3._vsOutput) return;
 
-      // Normalized Display Coordinates (ranges:  x[-1, 1], y[-1, 1], z[-1, 1],  left handed)
-      const n1 = new Vector3(c1.x / c1.w, c1.y / c1.w, c1.z / c1.w);
-      const n2 = new Vector3(c2.x / c2.w, c2.y / c2.w, c2.z / c2.w);
-      const n3 = new Vector3(c3.x / c3.w, c3.y / c3.w, c3.z / c3.w);
+    // Clip Space Coordinates
+    const c1 = v1._vsOutput.clip_space_position;
+    const c2 = v2._vsOutput.clip_space_position;
+    const c3 = v3._vsOutput.clip_space_position;
 
-      // Screen Space Coordinates
-      const r1 = new Vector3(
-        Math.floor((n1.x + 1) * 0.5 * (this.width - 1)),
-        Math.floor((1 - (n1.y + 1) * 0.5) * (this.height - 1)),
-        n1.z,
-      );
-      const r2 = new Vector3(
-        Math.floor((n2.x + 1) * 0.5 * (this.width - 1)),
-        Math.floor((1 - (n2.y + 1) * 0.5) * (this.height - 1)),
-        n2.z,
-      );
-      const r3 = new Vector3(
-        Math.floor((n3.x + 1) * 0.5 * (this.width - 1)),
-        Math.floor((1 - (n3.y + 1) * 0.5) * (this.height - 1)),
-        n3.z,
-      );
+    const c1IsOutside =
+      c1.w <= 0 || c1.x < -c1.w || c1.x > c1.w || c1.y < -c1.w || c1.y > c1.w || c1.z < -c1.w || c1.z > c1.w;
+    const c2IsOutside =
+      c2.w <= 0 || c2.x < -c2.w || c2.x > c2.w || c2.y < -c2.w || c2.y > c2.w || c2.z < -c2.w || c2.z > c2.w;
+    const c3IsOutside =
+      c3.w <= 0 || c3.x < -c3.w || c3.x > c3.w || c3.y < -c3.w || c3.y > c3.w || c3.z < -c3.w || c3.z > c3.w;
 
+    if (c1IsOutside && c2IsOutside && c3IsOutside) return;
+    else if (!c1IsOutside && !c2IsOutside && !c3IsOutside) this.rasterization(v1, v2, v3);
+    // TODO: CLIPPING USING HOMOGENEOUS COORDINATES
+
+    // this.rasterization(v1, v2, v3);
+  }
+
+  private rasterization(v1: Vertex, v2: Vertex, v3: Vertex) {
+    if (!v1._vsOutput || !v2._vsOutput || !v3._vsOutput) return;
+
+    // Clip Space Coordinates
+    const c1 = v1._vsOutput.clip_space_position;
+    const c2 = v2._vsOutput.clip_space_position;
+    const c3 = v3._vsOutput.clip_space_position;
+
+    // If texture coords exists
+    let t1, t2, t3;
+    if (v1.texCoord && v2.texCoord && v3.texCoord) {
+      t1 = new Vector3(v1.texCoord, 1).divide(c1.w);
+      t2 = new Vector3(v2.texCoord, 1).divide(c2.w);
+      t3 = new Vector3(v3.texCoord, 1).divide(c3.w);
+    }
+
+    // Normalized Display Coordinates (ranges:  x[-1, 1], y[-1, 1], z[-1, 1],  left handed)
+    const n1 = new Vector3(c1.x / c1.w, c1.y / c1.w, c1.z / c1.w);
+    const n2 = new Vector3(c2.x / c2.w, c2.y / c2.w, c2.z / c2.w);
+    const n3 = new Vector3(c3.x / c3.w, c3.y / c3.w, c3.z / c3.w);
+
+    // Caculate face normal
+    const faceNormal = n2.substract(n1).cross(n3.substract(n1));
+    // Apply back-face culling
+    if (faceNormal.z > 0) {
+      return;
+    }
+
+    // Screen Space Coordinates
+    const r1 = new Vector3(
+      Math.floor((n1.x + 1) * 0.5 * (this.width - 1)),
+      Math.floor((1 - (n1.y + 1) * 0.5) * (this.height - 1)),
+      n1.z,
+    );
+    const r2 = new Vector3(
+      Math.floor((n2.x + 1) * 0.5 * (this.width - 1)),
+      Math.floor((1 - (n2.y + 1) * 0.5) * (this.height - 1)),
+      n2.z,
+    );
+    const r3 = new Vector3(
+      Math.floor((n3.x + 1) * 0.5 * (this.width - 1)),
+      Math.floor((1 - (n3.y + 1) * 0.5) * (this.height - 1)),
+      n3.z,
+    );
+
+    if (this.WIREFRAME) {
+      this.rasterizeLine(r1, r2);
+      this.rasterizeLine(r2, r3);
+      this.rasterizeLine(r3, r1);
+    } else {
       // Bounding box of triangle
       const minX = Math.min(r1.x, r2.x, r3.x);
       const maxX = Math.max(r1.x, r2.x, r3.x);
@@ -131,6 +183,7 @@ export class Renderer {
         point.z = barycentric.x * r1.z + barycentric.y * r2.z + barycentric.z * r3.z;
 
         if (barycentric.x >= 0 && barycentric.y >= 0 && barycentric.z >= 0) {
+          // Fragment Shading
           let uv;
           if (t1 && t2 && t3) {
             // perpective correct interpolation for texture
@@ -143,6 +196,8 @@ export class Renderer {
           const fsOutput = this.shader.fragmentShader({ uv: uv });
           const color = fsOutput.fragment_color;
 
+          // TODO: Color blending
+          // Per-Sample operations
           if (this.zBuffer[pixelIndex] < point.z) continue;
           else this.zBuffer[pixelIndex] = point.z;
 
@@ -155,7 +210,42 @@ export class Renderer {
     }
   }
 
-  drawLine(v1: Vertex, v2: Vertex) {}
+  drawTriangle(v1: Vertex, v2: Vertex, v3: Vertex) {}
+
+  // Mostly for debug
+  rasterizeLine(r1: Vector3, r2: Vector3, color: Color = new Color(0, 0, 0)) {
+    let x0 = r1.x,
+      y0 = r1.y;
+    let x1 = r2.x,
+      y1 = r2.y;
+
+    const dx = Math.abs(x1 - x0);
+    const sx = x0 < x1 ? 1 : -1;
+    const dy = -Math.abs(y1 - y0);
+    const sy = y0 < y1 ? 1 : -1;
+    let error = dx + dy;
+
+    while (true && y0 < this.height && x0 < this.width) {
+      const bufferIndex = (y0 * this.width + x0) * 4;
+      this.buffer[bufferIndex + 0] = color.red;
+      this.buffer[bufferIndex + 1] = color.green;
+      this.buffer[bufferIndex + 2] = color.blue;
+      this.buffer[bufferIndex + 3] = color.alpha;
+
+      if (x0 === x1 && y0 === y1) break;
+      const e2 = 2 * error;
+      if (e2 >= dy) {
+        if (x0 === x1) break;
+        error = error + dy;
+        x0 = x0 + sx;
+      }
+      if (e2 <= dx) {
+        if (y0 === y1) break;
+        error = error + dx;
+        y0 = y0 + sy;
+      }
+    }
+  }
 
   drawPoint(vertex: Vertex) {
     // Apply Vertex Shader
@@ -186,13 +276,14 @@ export class Renderer {
       Math.floor((1 - (NDCSpace.y + 1) * 0.5) * (this.height - 1)),
     );
 
-    // Draw Point
     const bufferIndex = (rasterSpace.y * this.width + rasterSpace.x) * 4;
 
     //  Apply fragment shader
     const fsOutput = this.shader.fragmentShader({});
-    const color = fsOutput.fragment_color;
+    // const color = fsOutput.fragment_color;
+    const color = new Color(255, 0, 0);
 
+    // Apply per-sample operations
     this.buffer[bufferIndex + 0] = color.red;
     this.buffer[bufferIndex + 1] = color.green;
     this.buffer[bufferIndex + 2] = color.blue;
@@ -201,6 +292,13 @@ export class Renderer {
 
   switchBuffer(): Uint8ClampedArray {
     this.clearDepthBuffer();
+
+    const time = performance.now();
+    this.deltaTime = (time - this.lastTime) / 1000;
+    this.fps = 1 / this.deltaTime;
+    this.frameCount += 1;
+    this.lastTime = time;
+
     return this.buffer;
   }
 }

@@ -11,6 +11,7 @@ import {
 
 export class MyShader extends Shader {
   // Uniform Variables
+  transform: Matrix4x4 = new Matrix4x4();
   viewProjectionMatrix: Matrix4x4 = new Matrix4x4();
   fragColor: Color = new Color(0, 0, 0, 255);
   texture?: ImageData;
@@ -18,7 +19,9 @@ export class MyShader extends Shader {
   // Shaders
   vertexShader(vertex: Vertex): VertexShaderOutput {
     // To Clip Space
-    const clipSpace = new Vector4(vertex.position).multiply(this.viewProjectionMatrix);
+    const clipSpace = new Vector4(vertex.position).multiply(
+      this.transform.multiply(this.viewProjectionMatrix),
+    );
 
     return {
       clip_space_position: clipSpace,

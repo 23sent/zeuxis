@@ -17,6 +17,7 @@ export class Camera {
 
   private _projection: Matrix4x4 = new Matrix4x4();
   private _view: Matrix4x4 = new Matrix4x4();
+  private _viewProjectionMatrix: Matrix4x4 = new Matrix4x4();
 
   constructor(pT: ProjectionType = ProjectionType.Perspective) {
     this._projectionType = pT;
@@ -41,6 +42,8 @@ export class Camera {
     } else if (this._projectionType === ProjectionType.Orthographic) {
       this._projection = Matrix4x4.ortho(-this._aspect, this._aspect, -1.0, 1.0, -1.0, 1.0);
     }
+
+    this.calculateViewProjectionMatrix();
   }
 
   calculateViewMatrix() {
@@ -48,6 +51,12 @@ export class Camera {
     const rotate = Matrix4x4.fromQuaternion(Quaternion.fromEuler(this._rotation)); // Rotation
     const transform = translate.multiply(rotate);
     this._view = transform.inverse();
+
+    this.calculateViewProjectionMatrix();
+  }
+
+  calculateViewProjectionMatrix() {
+    this._viewProjectionMatrix = this._view.multiply(this._projection);
   }
 
   setPosition(v: Vector3) {
@@ -61,14 +70,14 @@ export class Camera {
   }
 
   getViewProjectionMatrix(): Matrix4x4 {
-    return this._view.multiply(this._projection);
+    return this._viewProjectionMatrix;
   }
 
   move(p: Vector3) {
-    const pos = new Vector4(p);
-    this._position = this._position.add(
-      new Vector3(pos.multiply(Matrix4x4.fromQuaternion(Quaternion.fromEuler(this._rotation)))),
-    );
+    // const pos = new Vector4(p);
+    // const rotation = Matrix4x4.fromQuaternion(Quaternion.fromEuler(this._rotation));
+    // const rotatedPosition = new Vector3(pos.multiply(rotation));
+    this._position = this._position.add(p);
     this.calculateViewMatrix();
   }
 

@@ -1,21 +1,23 @@
 import React, { useEffect, useRef } from 'react';
 import './App.css';
 import * as main from './Example/main';
-import { resizeImageBuffer } from './Zeuxis';
+import { Renderer, resizeImageBuffer } from './Zeuxis';
 
 function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRateRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    function render(b: Uint8ClampedArray) {
+    function render(b: Uint8ClampedArray, renderer: Renderer) {
       if (canvasRef.current && frameRateRef.current) {
         // Create ImageData instance
         const iData = new ImageData(resizeImageBuffer(b, 250, 250, 2), 500, 500);
         const ctx = canvasRef.current.getContext('2d');
         ctx?.putImageData(iData, 0, 0);
 
-        frameRateRef.current.innerText = `${main.fps.toFixed()} fps, ${main.frameCount} total frame count`;
+        frameRateRef.current.innerText = `${renderer.fps.toFixed()} fps, ${
+          renderer.frameCount
+        } total frame count`;
       }
     }
 
