@@ -25,13 +25,18 @@ export class MyShader extends Shader {
 
     return {
       clip_space_position: clipSpace,
+      texture_coords: vertex.texCoord,
     };
   }
 
-  fragmentShader({ uv }: any): FragmentShaderOutput {
+  fragmentShader({ texture_coords }: any): FragmentShaderOutput {
     let fragment_color = this.fragColor;
-    if (this.texture && uv) {
-      const tx = new Vector2(Math.floor(uv.x * this.texture?.width), Math.floor(uv.y * this.texture?.height));
+
+    if (this.texture && texture_coords) {
+      const tx = new Vector2(
+        Math.floor(texture_coords.x * this.texture?.width),
+        Math.floor(texture_coords.y * this.texture?.height),
+      );
       const index = (tx.y * this.texture.width + tx.x) * 4;
 
       fragment_color = new Color(

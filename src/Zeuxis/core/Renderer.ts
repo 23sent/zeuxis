@@ -25,6 +25,8 @@ export class Renderer {
 
   WIREFRAME = false;
 
+  RASTERIZATION_ALGORITHM: 'BARYCENTRIC' | 'EDGE_WALKING' = 'BARYCENTRIC';
+
   constructor(public width: number, public height: number) {
     this.setViewportSize(width, height);
   }
@@ -122,14 +124,6 @@ export class Renderer {
     const c2 = v2._vsOutput.clip_space_position;
     const c3 = v3._vsOutput.clip_space_position;
 
-    // If texture coords exists
-    let t1, t2, t3;
-    if (v1.texCoord && v2.texCoord && v3.texCoord) {
-      t1 = new Vector3(v1.texCoord, 1).divide(c1.w);
-      t2 = new Vector3(v2.texCoord, 1).divide(c2.w);
-      t3 = new Vector3(v3.texCoord, 1).divide(c3.w);
-    }
-
     // Normalized Display Coordinates (ranges:  x[-1, 1], y[-1, 1], z[-1, 1],  left handed)
     const n1 = new Vector3(c1.x / c1.w, c1.y / c1.w, c1.z / c1.w);
     const n2 = new Vector3(c2.x / c2.w, c2.y / c2.w, c2.z / c2.w);
@@ -160,10 +154,15 @@ export class Renderer {
     );
 
     if (this.WIREFRAME) {
+      // Bresenham's line drawing algorithm
       this.rasterizeLine(r1, r2);
       this.rasterizeLine(r2, r3);
       this.rasterizeLine(r3, r1);
-    } else {
+    } else if (this.RASTERIZATION_ALGORITHM === 'EDGE_WALKING') {
+      // TODO
+    } else if (this.RASTERIZATION_ALGORITHM === 'BARYCENTRIC') {
+      // Edge Equation Testing rasterization
+
       // Bounding box of triangle
       const minX = Math.min(r1.x, r2.x, r3.x);
       const maxX = Math.max(r1.x, r2.x, r3.x);
@@ -172,6 +171,8 @@ export class Renderer {
       const startPixelIndex = Math.max(0, Math.min(this.buffer.length, (minY * this.width + minX) * 4));
       const endPixelIndex = Math.max(0, Math.min(this.buffer.length, (maxY * this.width + maxX) * 4));
 
+      // Calculate interpolated vertex shader outputs for every fragment
+      // and pass them to fragment shader
       for (let index = startPixelIndex; index < endPixelIndex; index += 4) {
         const pixelIndex = index / 4;
 
@@ -183,34 +184,48 @@ export class Renderer {
         point.z = barycentric.x * r1.z + barycentric.y * r2.z + barycentric.z * r3.z;
 
         if (barycentric.x >= 0 && barycentric.y >= 0 && barycentric.z >= 0) {
-          // Fragment Shading
-          let uv;
-          if (t1 && t2 && t3) {
-            // perpective correct interpolation for texture
-            const wt = barycentric.x * t1.z + barycentric.y * t2.z + barycentric.z * t3.z;
-            uv = new Vector2(
-              (barycentric.x * t1.x + barycentric.y * t2.x + barycentric.z * t3.x) / wt,
-              (barycentric.x * t1.y + barycentric.y * t2.y + barycentric.z * t3.y) / wt,
-            );
+          // Apply perspective correct interpolation for vertex shader outputs
+          const fragmentShaderInput: any = {};
+          for (let key in v1._vsOutput) {
+            const k1 = v1._vsOutput[key];
+            const k2 = v2._vsOutput[key];
+            const k3 = v3._vsOutput[key];
+            if (k1 instanceof Vector2 && k2 instanceof Vector2 && k3 instanceof Vector2) {
+              const i1 = new Vector3(k1.x / c1.w, k1.y / c1.w, 1 / c1.w);
+              const i2 = new Vector3(k2.x / c1.w, k2.y / c1.w, 1 / c1.w);
+              const i3 = new Vector3(k3.x / c1.w, k3.y / c1.w, 1 / c1.w);
+              const wt = barycentric.x * i1.z + barycentric.y * i2.z + barycentric.z * i3.z;
+
+              fragmentShaderInput[key] = new Vector3(
+                (barycentric.x * i1.x + barycentric.y * i2.x + barycentric.z * i3.x) / wt,
+                (barycentric.x * i1.y + barycentric.y * i2.y + barycentric.z * i3.y) / wt,
+              );
+            }
           }
-          const fsOutput = this.shader.fragmentShader({ uv: uv });
-          const color = fsOutput.fragment_color;
 
-          // TODO: Color blending
-          // Per-Sample operations
-          if (this.zBuffer[pixelIndex] < point.z) continue;
-          else this.zBuffer[pixelIndex] = point.z;
-
-          this.buffer[index + 0] = color.red;
-          this.buffer[index + 1] = color.green;
-          this.buffer[index + 2] = color.blue;
-          this.buffer[index + 3] = color.alpha;
+          this.fragmentShading(point, fragmentShaderInput);
         }
       }
     }
   }
 
-  drawTriangle(v1: Vertex, v2: Vertex, v3: Vertex) {}
+  fragmentShading(fragment: Vector3, fragmentShaderInput: any) {
+    const pixelIndex = fragment.y * this.width + fragment.x;
+    const bufferIndex = pixelIndex * 4;
+    // Fragment Shading
+    const fsOutput = this.shader.fragmentShader(fragmentShaderInput);
+    const color = fsOutput.fragment_color;
+
+    // TODO: Color blending
+    // Per-Sample operations
+    if (this.zBuffer[pixelIndex] < fragment.z) return;
+    else this.zBuffer[pixelIndex] = fragment.z;
+
+    this.buffer[bufferIndex + 0] = color.red;
+    this.buffer[bufferIndex + 1] = color.green;
+    this.buffer[bufferIndex + 2] = color.blue;
+    this.buffer[bufferIndex + 3] = color.alpha;
+  }
 
   // Mostly for debug
   rasterizeLine(r1: Vector3, r2: Vector3, color: Color = new Color(0, 0, 0)) {
@@ -226,11 +241,7 @@ export class Renderer {
     let error = dx + dy;
 
     while (true && y0 < this.height && x0 < this.width) {
-      const bufferIndex = (y0 * this.width + x0) * 4;
-      this.buffer[bufferIndex + 0] = color.red;
-      this.buffer[bufferIndex + 1] = color.green;
-      this.buffer[bufferIndex + 2] = color.blue;
-      this.buffer[bufferIndex + 3] = color.alpha;
+      this.fragmentShading(new Vector3(x0, y0, 1), {});
 
       if (x0 === x1 && y0 === y1) break;
       const e2 = 2 * error;
@@ -247,6 +258,7 @@ export class Renderer {
     }
   }
 
+  // Only for debug
   drawPoint(vertex: Vertex) {
     // Apply Vertex Shader
     const vsOutput = this.shader.vertexShader(vertex);
