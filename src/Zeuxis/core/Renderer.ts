@@ -139,18 +139,18 @@ export class Renderer {
 
     // Screen Space Coordinates
     const r1 = new Vector3(
-      Math.floor((n1.x + 1) * 0.5 * (this.width - 1)),
-      Math.floor((1 - (n1.y + 1) * 0.5) * (this.height - 1)),
+      (n1.x + 1) * 0.5 * (this.width - 1),
+      (1 - (n1.y + 1) * 0.5) * (this.height - 1),
       n1.z,
     );
     const r2 = new Vector3(
-      Math.floor((n2.x + 1) * 0.5 * (this.width - 1)),
-      Math.floor((1 - (n2.y + 1) * 0.5) * (this.height - 1)),
+      (n2.x + 1) * 0.5 * (this.width - 1),
+      (1 - (n2.y + 1) * 0.5) * (this.height - 1),
       n2.z,
     );
     const r3 = new Vector3(
-      Math.floor((n3.x + 1) * 0.5 * (this.width - 1)),
-      Math.floor((1 - (n3.y + 1) * 0.5) * (this.height - 1)),
+      (n3.x + 1) * 0.5 * (this.width - 1),
+      (1 - (n3.y + 1) * 0.5) * (this.height - 1),
       n3.z,
     );
 
@@ -251,10 +251,10 @@ export class Renderer {
 
   // Mostly for debug
   rasterizeLine(r1: Vector3, r2: Vector3, color: Color = new Color(0, 0, 0)) {
-    let x0 = r1.x,
-      y0 = r1.y;
-    let x1 = r2.x,
-      y1 = r2.y;
+    let x0 = Math.floor(r1.x),
+      y0 = Math.floor(r1.y);
+    let x1 = Math.floor(r2.x),
+      y1 = Math.floor(r2.y);
 
     const dx = Math.abs(x1 - x0);
     const sx = x0 < x1 ? 1 : -1;

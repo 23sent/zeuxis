@@ -1,13 +1,16 @@
-import { render } from 'react-dom';
 import { Camera, Color, Matrix4x4, Mesh, Renderer, Vector3, Vertex } from '../Zeuxis';
 import { OBJLoader, TextureLoader } from '../Zeuxis/loaders';
 import { MyShader } from './MyShader';
 import { Quaternion } from '../Zeuxis/math/Quaternion';
 
-const renderer = new Renderer(100, 100);
-renderer.WIREFRAME = false;
-
-const objects = new Array<Mesh>();
+/**
+ * Test Models
+ * Cube
+ *  https://raw.githubusercontent.com/bulletphysics/bullet3/master/data/cube.obj
+ *  https://gist.githubusercontent.com/MaikKlein/0b6d6bb58772c13593d0a0add6004c1c/raw/48cf9c6d1cdd43cc6862d7d34a68114e2b93d497/cube.obj
+ * Pyramid
+ *  https://raw.githubusercontent.com/erik/obj-viewer/master/models/pyramid.obj
+ */
 
 const triangle = Mesh.fromArrays(
   [new Vertex([-0.9, 0, 0.8]), new Vertex([0, 0.5, 0.8]), new Vertex([0.9, 0, 0.8])],
@@ -18,124 +21,141 @@ const triangle2 = Mesh.fromArrays(
   [0, 1, 2],
 );
 
-const shader = new MyShader();
-// shader.transform = new Matrix4x4().translate(0, -0.1, 0).multiply(new Matrix4x4().scale(10, 10, 10));
-
-const camera = new Camera(Camera.Types.Perspective);
-camera.setPosition(new Vector3(0, 0, -2));
-
-let nextFrameId = 0;
-let renderCallback: (buffer: Uint8ClampedArray, r: Renderer) => void = (b: Uint8ClampedArray, r: Renderer) =>
-  console.log(r.fps);
-
 let cube = new Mesh(0, 0);
-
-/**
- * Test Models
- * Cube
- *  https://raw.githubusercontent.com/bulletphysics/bullet3/master/data/cube.obj
- *  https://gist.githubusercontent.com/MaikKlein/0b6d6bb58772c13593d0a0add6004c1c/raw/48cf9c6d1cdd43cc6862d7d34a68114e2b93d497/cube.obj
- * Pyramid
- *  https://raw.githubusercontent.com/erik/obj-viewer/master/models/pyramid.obj
- */
-OBJLoader('./assets/bunny.obj').then((obj) => {
-  cube = Mesh.fromArrays(
-    obj.vertices.map((v) => new Vertex(v.position, v.textCoord)),
-    obj.indices,
-  );
-});
-
 let texture: ImageData;
-TextureLoader('./assets/container.jpg').then((m) => {
-  texture = m;
-});
 
-function initControls() {
-  document.addEventListener('wheel', (e: WheelEvent) => {
-    const v = e.deltaY / 1000;
-    camera.move(new Vector3(0, 0, v));
-  });
+class Main {
+  private static instance: Main;
 
-  document.addEventListener('keydown', (e: KeyboardEvent) => {
-    const cameraSpeed = 0.5 * renderer.deltaTime;
-    if (e.key === 'w') {
-      camera.move(new Vector3(0, cameraSpeed, 0));
-    }
-    if (e.key === 's') {
-      camera.move(new Vector3(0, -cameraSpeed, 0));
-    }
-    if (e.key === 'a') {
-      camera.move(new Vector3(-cameraSpeed, 0, 0));
-    }
-    if (e.key === 'd') {
-      camera.move(new Vector3(cameraSpeed, 0, 0));
+  static getInstance(): Main {
+    if (!Main.instance) {
+      Main.instance = new Main();
     }
 
-    if (e.key === 'e') {
-      camera.rotate(new Vector3(0, -100 * renderer.deltaTime, 0));
-    }
+    return Main.instance;
+  }
 
-    if (e.key === 'q') {
-      camera.rotate(new Vector3(0, 100 * renderer.deltaTime, 0));
-    }
+  renderer: Renderer = new Renderer(100, 100);
+  shader = new MyShader();
+  camera = new Camera(Camera.Types.Perspective);
+  nextFrameId = 0;
+  isRun = false;
 
-    if (e.key === '1') {
-      camera.rotate(new Vector3(-100 * renderer.deltaTime, 0, 0));
-    }
+  renderCallback: (buffer: Uint8ClampedArray, r: Renderer) => void = (b: Uint8ClampedArray, r: Renderer) =>
+    console.log(r.fps);
 
-    if (e.key === '2') {
-      camera.rotate(new Vector3(100 * renderer.deltaTime, 0, 0));
-    }
-  });
+  private constructor() {
+    this.renderer.WIREFRAME = false;
+    this.camera.setPosition(new Vector3(0, 0, -2));
+
+    OBJLoader('./assets/cube.obj').then((obj) => {
+      cube = Mesh.fromArrays(
+        obj.vertices.map((v) => new Vertex(v.position, v.textCoord, v.normal)),
+        obj.indices,
+      );
+    });
+
+    TextureLoader('./assets/container.jpg').then((m) => {
+      texture = m;
+    });
+
+    this.initControls();
+  }
+
+  initControls() {
+    document.addEventListener('wheel', (e: WheelEvent) => {
+      const v = e.deltaY / 1000;
+      this.camera.move(new Vector3(0, 0, v));
+    });
+
+    document.addEventListener('keydown', (e: KeyboardEvent) => {
+      const cameraSpeed = 0.5 * this.renderer.deltaTime;
+      if (e.key === 'w') {
+        this.camera.move(new Vector3(0, cameraSpeed, 0));
+      }
+      if (e.key === 's') {
+        this.camera.move(new Vector3(0, -cameraSpeed, 0));
+      }
+      if (e.key === 'a') {
+        this.camera.move(new Vector3(-cameraSpeed, 0, 0));
+      }
+      if (e.key === 'd') {
+        this.camera.move(new Vector3(cameraSpeed, 0, 0));
+      }
+
+      if (e.key === 'e') {
+        this.camera.rotate(new Vector3(0, -100 * this.renderer.deltaTime, 0));
+      }
+
+      if (e.key === 'q') {
+        this.camera.rotate(new Vector3(0, 100 * this.renderer.deltaTime, 0));
+      }
+
+      if (e.key === '1') {
+        this.camera.rotate(new Vector3(-100 * this.renderer.deltaTime, 0, 0));
+      }
+
+      if (e.key === '2') {
+        this.camera.rotate(new Vector3(100 * this.renderer.deltaTime, 0, 0));
+      }
+    });
+  }
+
+  setViewportSize(w: number, h: number) {
+    this.camera.aspect = w / h;
+    this.renderer.setViewportSize(w, h);
+  }
+
+  setRenderCallback(render: (buffer: Uint8ClampedArray, renderer: Renderer) => void) {
+    this.renderCallback = render;
+  }
+
+  start() {
+    if (this.isRun) return;
+
+    this.isRun = true;
+    this.run();
+  }
+
+  private run() {
+    if (!this.isRun) return;
+
+    this.renderer.fillBuffer(new Color(0, 0, 0, 0));
+
+    this.renderer.shader = this.shader;
+
+    // Rotate over time
+    // this.shader.transform = this.shader.transform.multiply(
+    //   Matrix4x4.axisAngle(new Vector3(0, 1, 0), 1 * renderer.deltaTime),
+    // );
+    // this.shader.transform = this.shader.transform.multiply(
+    //   Matrix4x4.fromQuaternion(Quaternion.fromEuler(0, 30 * renderer.deltaTime, 0)),
+    // );
+
+    this.shader.texture = texture;
+    this.shader.viewProjectionMatrix = this.camera.getViewProjectionMatrix();
+
+    // this.shader.fragColor = new Color(0, 0, 255);
+    // this.renderer.drawMesh(triangle);
+    // this.shader.fragColor = new Color(0, 255, 0);
+    // this.renderer.drawMesh(triangle2);
+
+    // this.renderer.drawMesh(cube);
+    this.shader.fragColor = new Color(255, 0, 0);
+    // this.renderer.drawMesh(Mesh.QuadMesh);
+    this.renderer.drawMesh(cube);
+    // this.renderer.drawMesh(triangle2);
+
+    this.renderCallback(this.renderer.switchBuffer(), this.renderer);
+
+    cancelAnimationFrame(this.nextFrameId);
+    this.nextFrameId = requestAnimationFrame(() => this.run());
+  }
+
+  stop() {
+    this.isRun = false;
+    cancelAnimationFrame(this.nextFrameId);
+  }
 }
 
-initControls();
-
-export function addObject(obj: Mesh) {
-  objects.push(obj);
-}
-
-export function setViewportSize(w: number, h: number) {
-  camera.aspect = w / h;
-  renderer.setViewportSize(w, h);
-}
-
-export function setRenderCallback(render: (buffer: Uint8ClampedArray, renderer: Renderer) => void) {
-  renderCallback = render;
-}
-
-export function start() {
-  renderer.fillBuffer(new Color(0, 0, 0, 0));
-
-  renderer.shader = shader;
-
-  // Rotate over time
-  // shader.transform = shader.transform.multiply(
-  //   Matrix4x4.axisAngle(new Vector3(0, 1, 0), 1 * renderer.deltaTime),
-  // );
-  // shader.transform = shader.transform.multiply(
-  //   Matrix4x4.fromQuaternion(Quaternion.fromEuler(0, 30 * renderer.deltaTime, 0)),
-  // );
-
-  shader.texture = texture;
-  shader.viewProjectionMatrix = camera.getViewProjectionMatrix();
-
-  // shader.fragColor = new Color(0, 0, 255);
-  // renderer.drawMesh(triangle);
-  // shader.fragColor = new Color(0, 255, 0);
-  // renderer.drawMesh(triangle2);
-
-  // renderer.drawMesh(cube);
-  shader.fragColor = new Color(255, 0, 0);
-  // renderer.drawMesh(Mesh.QuadMesh);
-  renderer.drawMesh(cube);
-  // renderer.drawMesh(triangle2);
-
-  renderCallback(renderer.switchBuffer(), renderer);
-
-  nextFrameId = requestAnimationFrame(() => start());
-}
-
-export function stop() {
-  cancelAnimationFrame(nextFrameId);
-}
+export default Main.getInstance();

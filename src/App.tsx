@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import './App.css';
-import * as main from './Example/main';
+import Main from './Example/main';
 import { Renderer, resizeImageBuffer } from './Zeuxis';
 
 function App() {
@@ -21,11 +21,11 @@ function App() {
       }
     }
 
-    main.setViewportSize(250, 250);
-    main.setRenderCallback(render);
+    Main.setViewportSize(250, 250);
+    Main.setRenderCallback(render);
 
     return () => {
-      main.stop();
+      Main.stop();
     };
   }, []);
 
@@ -40,9 +40,11 @@ function App() {
       />
       <div key="info" ref={frameRateRef}></div>
 
-      <button onClick={() => main.start()}>Start</button>
+      <button onClick={() => Main.start()}>Start</button>
       <div style={{ margin: '4px' }}></div>
-      <button onClick={() => main.stop()}>Stop</button>
+      <button onClick={() => Main.stop()}>Stop</button>
+      <div style={{ margin: '4px' }}></div>
+      <button onClick={() => (Main.renderer.WIREFRAME = !Main.renderer.WIREFRAME)}>Line/Fill</button>
     </div>
   );
 }

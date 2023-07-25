@@ -4,7 +4,7 @@ import { VertexShaderOutput } from '../core';
 export class Vertex {
   public position: Vector3;
   public texCoord?: Vector2;
-  public normal?: Vector2;
+  public normal?: Vector3;
 
   // Rendering cache
   public _vsOutput?: VertexShaderOutput;
