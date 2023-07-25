@@ -14,7 +14,7 @@ const triangle = Mesh.fromArrays(
   [0, 1, 2],
 );
 const triangle2 = Mesh.fromArrays(
-  [new Vertex([-0.3, 0, 1], [0, 0]), new Vertex([0.6, 0.5, 1], [0, 1]), new Vertex([1.5, 0, 1], [1, 0])],
+  [new Vertex([-0.5, 0, 0], [0, 0]), new Vertex([0.5, 1, 0], [0, 1]), new Vertex([0.5, 0, 0], [1, 0])],
   [0, 1, 2],
 );
 
@@ -38,7 +38,7 @@ let cube = new Mesh(0, 0);
  * Pyramid
  *  https://raw.githubusercontent.com/erik/obj-viewer/master/models/pyramid.obj
  */
-OBJLoader('./assets/cube.obj').then((obj) => {
+OBJLoader('./assets/bunny.obj').then((obj) => {
   cube = Mesh.fromArrays(
     obj.vertices.map((v) => new Vertex(v.position, v.textCoord)),
     obj.indices,
@@ -57,7 +57,7 @@ function initControls() {
   });
 
   document.addEventListener('keydown', (e: KeyboardEvent) => {
-    const cameraSpeed = 1 * renderer.deltaTime;
+    const cameraSpeed = 0.5 * renderer.deltaTime;
     if (e.key === 'w') {
       camera.move(new Vector3(0, cameraSpeed, 0));
     }
@@ -72,19 +72,19 @@ function initControls() {
     }
 
     if (e.key === 'e') {
-      camera.rotate(new Vector3(0, -25 * cameraSpeed, 0));
+      camera.rotate(new Vector3(0, -100 * renderer.deltaTime, 0));
     }
 
     if (e.key === 'q') {
-      camera.rotate(new Vector3(0, 25 * cameraSpeed, 0));
+      camera.rotate(new Vector3(0, 100 * renderer.deltaTime, 0));
     }
 
     if (e.key === '1') {
-      camera.rotate(new Vector3(-25 * cameraSpeed, 0, 0));
+      camera.rotate(new Vector3(-100 * renderer.deltaTime, 0, 0));
     }
 
     if (e.key === '2') {
-      camera.rotate(new Vector3(25 * cameraSpeed, 0, 0));
+      camera.rotate(new Vector3(100 * renderer.deltaTime, 0, 0));
     }
   });
 }
@@ -113,14 +113,14 @@ export function start() {
   // shader.transform = shader.transform.multiply(
   //   Matrix4x4.axisAngle(new Vector3(0, 1, 0), 1 * renderer.deltaTime),
   // );
-  shader.transform = shader.transform.multiply(
-    Matrix4x4.fromQuaternion(Quaternion.fromEuler(0, 30 * renderer.deltaTime, 0)),
-  );
+  // shader.transform = shader.transform.multiply(
+  //   Matrix4x4.fromQuaternion(Quaternion.fromEuler(0, 30 * renderer.deltaTime, 0)),
+  // );
 
   shader.texture = texture;
   shader.viewProjectionMatrix = camera.getViewProjectionMatrix();
 
-  shader.fragColor = new Color(0, 0, 255);
+  // shader.fragColor = new Color(0, 0, 255);
   // renderer.drawMesh(triangle);
   // shader.fragColor = new Color(0, 255, 0);
   // renderer.drawMesh(triangle2);
