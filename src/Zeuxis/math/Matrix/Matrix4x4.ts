@@ -34,7 +34,7 @@ export class Matrix4x4 {
     return this._data.length;
   }
 
-  get transpose(): Matrix4x4 {
+  transpose(): Matrix4x4 {
     return Matrix4x4.Transpose(this);
   }
 

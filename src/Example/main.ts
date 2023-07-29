@@ -1,5 +1,5 @@
-import { Camera, Color, Matrix4x4, Mesh, Renderer, Vector3, Vertex } from '../Zeuxis';
-import { OBJLoader, TextureLoader } from '../Zeuxis/loaders';
+import { Camera, Color, Matrix4x4, Mesh, Renderer, Vector3, Vector4, Vertex } from '../Zeuxis';
+import { OBJLoader } from '../Zeuxis/loaders';
 import { MyShader } from './MyShader';
 import { Quaternion } from '../Zeuxis/math/Quaternion';
 
@@ -48,16 +48,16 @@ class Main {
     this.renderer.WIREFRAME = false;
     this.camera.setPosition(new Vector3(0, 0, -2));
 
-    OBJLoader('./assets/cube.obj').then((obj) => {
+    OBJLoader('./assets/african_head.obj').then((obj) => {
       cube = Mesh.fromArrays(
         obj.vertices.map((v) => new Vertex(v.position, v.textCoord, v.normal)),
         obj.indices,
       );
     });
 
-    TextureLoader('./assets/container.jpg').then((m) => {
-      texture = m;
-    });
+    // TextureLoader('./assets/container.jpg').then((m) => {
+    //   texture = m;
+    // });
 
     this.initControls();
   }
@@ -125,11 +125,15 @@ class Main {
     this.renderer.shader = this.shader;
 
     // Rotate over time
-    // this.shader.transform = this.shader.transform.multiply(
-    //   Matrix4x4.axisAngle(new Vector3(0, 1, 0), 1 * renderer.deltaTime),
-    // );
-    // this.shader.transform = this.shader.transform.multiply(
-    //   Matrix4x4.fromQuaternion(Quaternion.fromEuler(0, 30 * renderer.deltaTime, 0)),
+    this.shader.transform = this.shader.transform.multiply(
+      Matrix4x4.fromQuaternion(Quaternion.fromEuler(0, 30 * this.renderer.deltaTime, 0)),
+    );
+    this.shader.transformInverseTranspose = this.shader.transform.inverse().transpose();
+
+    // this.shader.lightPosition = new Vector3(
+    //   new Vector4(this.shader.lightPosition).multiply(
+    //     Matrix4x4.fromQuaternion(Quaternion.fromEuler(0, 30 * this.renderer.deltaTime, 0)),
+    //   ),
     // );
 
     this.shader.texture = texture;

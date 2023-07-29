@@ -1,16 +1,16 @@
-export function resizeImageBuffer(
-  buffer: Uint8ClampedArray,
-  w: number,
-  h: number,
-  ratio: number,
-): Uint8ClampedArray {
+export function resizeImageBuffer(buffer: Uint8ClampedArray, w: number, h: number, ratio: number): Uint8ClampedArray {
   ratio = Math.max(1, Number(ratio.toFixed()));
   const newBuffer = new Uint8ClampedArray(buffer.length * ratio * ratio);
 
   for (let newBufferIndex = 0; newBufferIndex < newBuffer.length; newBufferIndex += 4) {
     const pixelIndex = Math.floor(newBufferIndex / 4);
-    const x = Math.floor(Math.floor(pixelIndex / ratio) % w);
-    const y = Math.floor(Math.floor(pixelIndex / (ratio * ratio)) / h);
+    const newX = pixelIndex % (w * ratio);
+    const newY = Math.floor(pixelIndex / (w * ratio));
+    const x = Math.floor(newX / ratio);
+    const y = Math.floor(newY / ratio);
+
+    // const x = Math.floor(Math.floor(pixelIndex / ratio) % w);
+    // const y = Math.floor(Math.floor(pixelIndex / (ratio * ratio)) / h);
     const bufferIndex = (y * w + x) * 4;
 
     newBuffer[newBufferIndex + 0] = buffer[bufferIndex + 0];

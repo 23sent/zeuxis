@@ -3,6 +3,12 @@ import './App.css';
 import Main from './Example/main';
 import { Renderer, resizeImageBuffer } from './Zeuxis';
 
+const RATIO = 1;
+const BUFFER_W = 16 * 60;
+const BUFFER_H = 9 * 60;
+const CANVAS_WIDTH = BUFFER_W * RATIO;
+const CANVAS_HEIGHT = BUFFER_H * RATIO;
+
 function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRateRef = useRef<HTMLDivElement>(null);
@@ -11,17 +17,15 @@ function App() {
     function render(b: Uint8ClampedArray, renderer: Renderer) {
       if (canvasRef.current && frameRateRef.current) {
         // Create ImageData instance
-        const iData = new ImageData(resizeImageBuffer(b, 250, 250, 2), 500, 500);
+        const iData = new ImageData(resizeImageBuffer(b, BUFFER_W, BUFFER_H, RATIO), CANVAS_WIDTH, CANVAS_HEIGHT);
         const ctx = canvasRef.current.getContext('2d');
         ctx?.putImageData(iData, 0, 0);
 
-        frameRateRef.current.innerText = `${renderer.fps.toFixed()} fps, ${
-          renderer.frameCount
-        } total frame count`;
+        frameRateRef.current.innerText = `${renderer.fps.toFixed()} fps, ${renderer.frameCount} total frame count`;
       }
     }
 
-    Main.setViewportSize(250, 250);
+    Main.setViewportSize(BUFFER_W, BUFFER_H);
     Main.setRenderCallback(render);
 
     return () => {
@@ -34,8 +38,8 @@ function App() {
       <canvas
         key="canvas"
         ref={canvasRef}
-        width={500}
-        height={500}
+        width={CANVAS_WIDTH}
+        height={CANVAS_HEIGHT}
         style={{ margin: '50px auto', border: '1px solid black' } as React.CSSProperties}
       />
       <div key="info" ref={frameRateRef}></div>

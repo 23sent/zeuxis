@@ -1,6 +1,6 @@
 import { Color, Mesh, Vertex } from '../api';
 import { Vector2, Vector3, Vector4 } from '../math';
-import { Shader } from './Shader';
+import { Shader, VertexShaderOutput } from './Shader';
 
 /**
  * Resources
@@ -14,6 +14,12 @@ import { Shader } from './Shader';
  *    https://fabiensanglard.net/polygon_codec/clippingdocument/Clipping.pdf
  *    https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=497a973878c87e357ff4741b394eb106eb510177
  */
+
+interface VertexCache {
+  vertex: Vertex;
+  vsOutput: VertexShaderOutput;
+  screen_space_coords?: Vector3;
+}
 
 export class Renderer {
   buffer: Uint8ClampedArray = new Uint8ClampedArray();
@@ -76,32 +82,29 @@ export class Renderer {
   }
 
   drawMesh(mesh: Mesh<Vertex>): void {
+    const vertex_cache: VertexCache[] = [];
+    for (let i = 0; i < mesh.verticies.length; i++) {
+      vertex_cache.push({
+        vertex: mesh.verticies[i],
+        vsOutput: this.shader.vertexShader(mesh.verticies[i]),
+      });
+    }
+
     for (let i = 0; i < mesh.indicies.length; i += 3) {
       // Verticies
-      const v1 = mesh.verticies[mesh.indicies[i + 0]];
-      const v2 = mesh.verticies[mesh.indicies[i + 1]];
-      const v3 = mesh.verticies[mesh.indicies[i + 2]];
+      const v1 = vertex_cache[mesh.indicies[i + 0]];
+      const v2 = vertex_cache[mesh.indicies[i + 1]];
+      const v3 = vertex_cache[mesh.indicies[i + 2]];
 
-      this.vertexShading(v1, v2, v3);
+      this.vertexPostProcess(v1, v2, v3);
     }
   }
 
-  private vertexShading(v1: Vertex, v2: Vertex, v3: Vertex) {
-    // Apply vertex shader
-    v1._vsOutput = this.shader.vertexShader(v1);
-    v2._vsOutput = this.shader.vertexShader(v2);
-    v3._vsOutput = this.shader.vertexShader(v3);
-
-    this.vertexPostProcess(v1, v2, v3);
-  }
-
-  private vertexPostProcess(v1: Vertex, v2: Vertex, v3: Vertex) {
-    if (!v1._vsOutput || !v2._vsOutput || !v3._vsOutput) return;
-
+  private vertexPostProcess(vc1: VertexCache, vc2: VertexCache, vc3: VertexCache) {
     // Clip Space Coordinates
-    const c1 = v1._vsOutput.clip_space_position;
-    const c2 = v2._vsOutput.clip_space_position;
-    const c3 = v3._vsOutput.clip_space_position;
+    const c1 = vc1.vsOutput.clip_space_position;
+    const c2 = vc2.vsOutput.clip_space_position;
+    const c3 = vc3.vsOutput.clip_space_position;
 
     const c1IsOutside =
       c1.w <= 0 || c1.x < -c1.w || c1.x > c1.w || c1.y < -c1.w || c1.y > c1.w || c1.z < -c1.w || c1.z > c1.w;
@@ -111,19 +114,17 @@ export class Renderer {
       c3.w <= 0 || c3.x < -c3.w || c3.x > c3.w || c3.y < -c3.w || c3.y > c3.w || c3.z < -c3.w || c3.z > c3.w;
 
     if (c1IsOutside && c2IsOutside && c3IsOutside) return;
-    else if (!c1IsOutside && !c2IsOutside && !c3IsOutside) this.rasterization(v1, v2, v3);
+    else if (!c1IsOutside && !c2IsOutside && !c3IsOutside) this.rasterization(vc1, vc2, vc3);
     // TODO: CLIPPING USING HOMOGENEOUS COORDINATES
 
     // this.rasterization(v1, v2, v3);
   }
 
-  private rasterization(v1: Vertex, v2: Vertex, v3: Vertex) {
-    if (!v1._vsOutput || !v2._vsOutput || !v3._vsOutput) return;
-
+  private rasterization(vc1: VertexCache, vc2: VertexCache, vc3: VertexCache) {
     // Clip Space Coordinates
-    const c1 = v1._vsOutput.clip_space_position;
-    const c2 = v2._vsOutput.clip_space_position;
-    const c3 = v3._vsOutput.clip_space_position;
+    const c1 = vc1.vsOutput.clip_space_position;
+    const c2 = vc2.vsOutput.clip_space_position;
+    const c3 = vc3.vsOutput.clip_space_position;
 
     // Normalized Display Coordinates (ranges:  x[-1, 1], y[-1, 1], z[-1, 1],  left handed)
     const n1 = new Vector3(c1.x / c1.w, c1.y / c1.w, c1.z / c1.w);
@@ -138,21 +139,9 @@ export class Renderer {
     }
 
     // Screen Space Coordinates
-    const r1 = new Vector3(
-      (n1.x + 1) * 0.5 * (this.width - 1),
-      (1 - (n1.y + 1) * 0.5) * (this.height - 1),
-      n1.z,
-    );
-    const r2 = new Vector3(
-      (n2.x + 1) * 0.5 * (this.width - 1),
-      (1 - (n2.y + 1) * 0.5) * (this.height - 1),
-      n2.z,
-    );
-    const r3 = new Vector3(
-      (n3.x + 1) * 0.5 * (this.width - 1),
-      (1 - (n3.y + 1) * 0.5) * (this.height - 1),
-      n3.z,
-    );
+    const r1 = new Vector3((n1.x + 1) * 0.5 * (this.width - 1), (1 - (n1.y + 1) * 0.5) * (this.height - 1), n1.z);
+    const r2 = new Vector3((n2.x + 1) * 0.5 * (this.width - 1), (1 - (n2.y + 1) * 0.5) * (this.height - 1), n2.z);
+    const r3 = new Vector3((n3.x + 1) * 0.5 * (this.width - 1), (1 - (n3.y + 1) * 0.5) * (this.height - 1), n3.z);
 
     if (this.WIREFRAME) {
       // Bresenham's line drawing algorithm
@@ -178,36 +167,56 @@ export class Renderer {
           point.x = x;
           point.y = y;
 
-          // this.putPixel(point.x, point.y, 1, Color.green);
-
           const barycentric = this.getBarycentricCoords(r1, r2, r3, point);
           point.z = barycentric.x * r1.z + barycentric.y * r2.z + barycentric.z * r3.z;
 
           if (barycentric.x >= 0 && barycentric.y >= 0 && barycentric.z >= 0) {
-            // Apply perspective correct interpolation for vertex shader outputs
-            const fragmentShaderInput: any = {};
-            for (let key in v1._vsOutput) {
-              const k1 = v1._vsOutput[key];
-              const k2 = v2._vsOutput[key];
-              const k3 = v3._vsOutput[key];
-              if (k1 instanceof Vector2 && k2 instanceof Vector2 && k3 instanceof Vector2) {
-                const i1 = new Vector3(k1.x / c1.w, k1.y / c1.w, 1 / c1.w);
-                const i2 = new Vector3(k2.x / c1.w, k2.y / c1.w, 1 / c1.w);
-                const i3 = new Vector3(k3.x / c1.w, k3.y / c1.w, 1 / c1.w);
-                const wt = barycentric.x * i1.z + barycentric.y * i2.z + barycentric.z * i3.z;
-
-                fragmentShaderInput[key] = new Vector3(
-                  (barycentric.x * i1.x + barycentric.y * i2.x + barycentric.z * i3.x) / wt,
-                  (barycentric.x * i1.y + barycentric.y * i2.y + barycentric.z * i3.y) / wt,
-                );
-              }
-            }
-
+            const fragmentShaderInput = this._calculateFragmentShaderInput(vc1, vc2, vc3, barycentric);
             this.fragmentShading(point, fragmentShaderInput);
           }
         }
       }
     }
+  }
+
+  _calculateFragmentShaderInput(vc1: VertexCache, vc2: VertexCache, vc3: VertexCache, barycentric: Vector3) {
+    // Clip Space Coordinates
+    const c1 = vc1.vsOutput.clip_space_position;
+    const c2 = vc2.vsOutput.clip_space_position;
+    const c3 = vc3.vsOutput.clip_space_position;
+
+    const fragmentShaderInput: any = {};
+
+    // Apply perspective correct interpolation for every Vectoral vertex shader output
+    for (let key in vc1.vsOutput) {
+      const k1 = vc1.vsOutput[key];
+      const k2 = vc2.vsOutput[key];
+      const k3 = vc3.vsOutput[key];
+      if (k1 instanceof Vector2 && k2 instanceof Vector2 && k3 instanceof Vector2) {
+        // const i1 = new Vector3(k1.x / c1.w, k1.y / c1.w, 1 / c1.w);
+        // const i2 = new Vector3(k2.x / c2.w, k2.y / c2.w, 1 / c2.w);
+        // const i3 = new Vector3(k3.x / c3.w, k3.y / c3.w, 1 / c3.w);
+        const wt = barycentric.x / c1.w + barycentric.y / c2.w + barycentric.z / c3.w;
+
+        fragmentShaderInput[key] = new Vector3(
+          (barycentric.x * (k1.x / c1.w) + barycentric.y * (k2.x / c2.w) + barycentric.z * (k3.x / c3.w)) / wt,
+          (barycentric.x * (k1.y / c1.w) + barycentric.y * (k2.y / c2.w) + barycentric.z * (k3.y / c3.w)) / wt,
+        );
+      } else if (k1 instanceof Vector3 && k2 instanceof Vector3 && k3 instanceof Vector3) {
+        // const i1 = new Vector4(k1.x / c1.w, k1.y / c1.w, k1.z / c1.w, 1 / c1.w);
+        // const i2 = new Vector4(k2.x / c2.w, k2.y / c2.w, k2.z / c2.w, 1 / c2.w);
+        // const i3 = new Vector4(k3.x / c3.w, k3.y / c3.w, k3.z / c3.w, 1 / c3.w);
+        const wt = barycentric.x / c1.w + barycentric.y / c2.w + barycentric.z / c3.w;
+
+        fragmentShaderInput[key] = new Vector3(
+          (barycentric.x * (k1.x / c1.w) + barycentric.y * (k2.x / c2.w) + barycentric.z * (k3.x / c3.w)) / wt,
+          (barycentric.x * (k1.y / c1.w) + barycentric.y * (k2.y / c2.w) + barycentric.z * (k3.y / c3.w)) / wt,
+          (barycentric.x * (k1.z / c1.w) + barycentric.y * (k2.z / c2.w) + barycentric.z * (k3.z / c3.w)) / wt,
+        );
+      }
+    }
+
+    return fragmentShaderInput;
   }
 
   private fragmentShading(fragment: Vector3, fragmentShaderInput: any) {
@@ -303,11 +312,7 @@ export class Renderer {
       return;
 
     // To Normalized Display Coordinates space
-    const NDCSpace = new Vector3(
-      clipSpace.x / clipSpace.w,
-      clipSpace.y / clipSpace.w,
-      clipSpace.z / clipSpace.w,
-    );
+    const NDCSpace = new Vector3(clipSpace.x / clipSpace.w, clipSpace.y / clipSpace.w, clipSpace.z / clipSpace.w);
 
     // To rasterized coordinates
     const rasterSpace = new Vector2(
