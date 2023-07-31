@@ -147,6 +147,7 @@ class Main {
     // );
     this.shader.transformInverseTranspose = this.shader.transform.inverse().transpose();
 
+    // Rotate light over time
     this.shader.lightPosition = new Vector3(
       new Vector4(this.shader.lightPosition).multiply(
         Matrix4x4.fromQuaternion(Quaternion.fromEuler(0, 30 * this.renderer.deltaTime, 0)),
@@ -162,13 +163,13 @@ class Main {
     // this.renderer.drawMesh(triangle2);
 
     this.shader.fragColor = new Color(255, 0, 0);
-    this.renderer.drawMesh(cube);
+    // this.renderer.drawMesh(cube);
 
     // this.shader.fragColor = new Color(255, 255, 0);
     // this.renderer.drawMesh(bunny);
 
     this.shader.fragColor = new Color(255, 0, 0);
-    // this.renderer.drawMesh(face);
+    this.renderer.drawMesh(face);
 
     // this.shader.fragColor = new Color(255, 255, 0);
     // this.renderer.drawMesh(bunny);

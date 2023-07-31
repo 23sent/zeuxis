@@ -10,8 +10,8 @@ export interface FragmentShaderOutput {
   fragment_color: Color;
 }
 
-export class Shader {
-  vertexShader(vertex: Vertex): VertexShaderOutput {
+export class Shader<T extends Vertex = Vertex> {
+  vertexShader(vertex: T): VertexShaderOutput {
     return {
       clip_space_position: new Vector4(vertex.position),
     };

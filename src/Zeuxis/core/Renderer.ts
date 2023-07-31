@@ -18,12 +18,15 @@ import { Shader, VertexShaderOutput } from './Shader';
 interface VertexCache {
   vertex: Vertex;
   vsOutput: VertexShaderOutput;
-  screen_space_position?: Vector3;
+  ndc_position: Vector3;
+  screen_space_position: Vector3;
 }
 
 const vertex_cache: VertexCache[] = new Array(10000).fill(0).map<VertexCache>(() => ({
   vertex: new Vertex([0, 0, 0]),
   vsOutput: { clip_space_position: new Vector4() },
+  ndc_position: new Vector3(),
+  screen_space_position: new Vector3(),
 }));
 
 export class Renderer {
@@ -108,7 +111,21 @@ export class Renderer {
       // });
 
       vertex_cache[i].vertex = verticies[i];
+
+      // Clip Space Coordinates
       vertex_cache[i].vsOutput = this.shader.vertexShader(verticies[i]);
+      const c1 = vertex_cache[i].vsOutput.clip_space_position;
+
+      // Normalized Display Coordinates (ranges:  x[-1, 1], y[-1, 1], z[-1, 1],  left handed)
+      vertex_cache[i].ndc_position.x = c1.x / c1.w;
+      vertex_cache[i].ndc_position.y = c1.y / c1.w;
+      vertex_cache[i].ndc_position.z = c1.z / c1.w;
+      const n1 = vertex_cache[i].ndc_position;
+
+      // Screen Space Coordinates
+      vertex_cache[i].screen_space_position.x = (n1.x + 1) * 0.5 * (this.width - 1);
+      vertex_cache[i].screen_space_position.y = (1 - (n1.y + 1) * 0.5) * (this.height - 1);
+      vertex_cache[i].screen_space_position.z = n1.z;
     }
   }
 
@@ -130,50 +147,43 @@ export class Renderer {
     const c3IsOutside = c3.w <= 0 || c3.z < -c3.w || c3.z > c3.w;
 
     if (c1IsOutside && c2IsOutside && c3IsOutside) return;
-    else if (!c1IsOutside && !c2IsOutside && !c3IsOutside) this.rasterization(vc1, vc2, vc3);
-    // TODO: CLIPPING USING HOMOGENEOUS COORDINATES
+    else if (!c1IsOutside && !c2IsOutside && !c3IsOutside) {
+      const n1 = vc1.ndc_position;
+      const n2 = vc2.ndc_position;
+      const n3 = vc3.ndc_position;
 
-    // this.rasterization(v1, v2, v3);
+      // Caculate face normal
+      const faceNormal = n2.substract(n1).cross(n3.substract(n1));
+      // Apply back-face culling
+      if (faceNormal.z > 0) {
+        return;
+      }
+
+      this.rasterization(vc1, vc2, vc3);
+    }
+
+    // TODO: CLIPPING USING HOMOGENEOUS COORDINATES
   }
 
   private rasterization(vc1: VertexCache, vc2: VertexCache, vc3: VertexCache) {
     // Clip Space Coordinates
-    const c1 = vc1.vsOutput.clip_space_position;
-    const c2 = vc2.vsOutput.clip_space_position;
-    const c3 = vc3.vsOutput.clip_space_position;
+    // const c1 = vc1.vsOutput.clip_space_position;
+    // const c2 = vc2.vsOutput.clip_space_position;
+    // const c3 = vc3.vsOutput.clip_space_position;
 
     // Normalized Display Coordinates (ranges:  x[-1, 1], y[-1, 1], z[-1, 1],  left handed)
-    const n1 = new Vector3(c1.x / c1.w, c1.y / c1.w, c1.z / c1.w);
-    const n2 = new Vector3(c2.x / c2.w, c2.y / c2.w, c2.z / c2.w);
-    const n3 = new Vector3(c3.x / c3.w, c3.y / c3.w, c3.z / c3.w);
-
-    // Caculate face normal
-    const faceNormal = n2.substract(n1).cross(n3.substract(n1));
-    // Apply back-face culling
-    if (faceNormal.z > 0) {
-      return;
-    }
+    // const n1 = new Vector3(c1.x / c1.w, c1.y / c1.w, c1.z / c1.w);
+    // const n2 = new Vector3(c2.x / c2.w, c2.y / c2.w, c2.z / c2.w);
+    // const n3 = new Vector3(c3.x / c3.w, c3.y / c3.w, c3.z / c3.w);
 
     // Screen Space Coordinates
-    const r1 = new Vector3(
-      Math.floor((n1.x + 1) * 0.5 * (this.width - 1)),
-      Math.floor((1 - (n1.y + 1) * 0.5) * (this.height - 1)),
-      n1.z,
-    );
-    const r2 = new Vector3(
-      Math.floor((n2.x + 1) * 0.5 * (this.width - 1)),
-      Math.floor((1 - (n2.y + 1) * 0.5) * (this.height - 1)),
-      n2.z,
-    );
-    const r3 = new Vector3(
-      Math.floor((n3.x + 1) * 0.5 * (this.width - 1)),
-      Math.floor((1 - (n3.y + 1) * 0.5) * (this.height - 1)),
-      n3.z,
-    );
+    // const r1 = new Vector3((n1.x + 1) * 0.5 * (this.width - 1), (1 - (n1.y + 1) * 0.5) * (this.height - 1), n1.z);
+    // const r2 = new Vector3((n2.x + 1) * 0.5 * (this.width - 1), (1 - (n2.y + 1) * 0.5) * (this.height - 1), n2.z);
+    // const r3 = new Vector3((n3.x + 1) * 0.5 * (this.width - 1), (1 - (n3.y + 1) * 0.5) * (this.height - 1), n3.z);
 
-    vc1.screen_space_position = r1;
-    vc2.screen_space_position = r2;
-    vc3.screen_space_position = r3;
+    const r1 = vc1.screen_space_position;
+    const r2 = vc2.screen_space_position;
+    const r3 = vc3.screen_space_position;
 
     if (this.WIREFRAME) {
       // Bresenham's line drawing algorithm
