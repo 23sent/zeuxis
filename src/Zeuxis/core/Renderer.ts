@@ -18,8 +18,13 @@ import { Shader, VertexShaderOutput } from './Shader';
 interface VertexCache {
   vertex: Vertex;
   vsOutput: VertexShaderOutput;
-  screen_space_coords?: Vector3;
+  screen_space_position?: Vector3;
 }
+
+const vertex_cache: VertexCache[] = new Array(10000).fill(0).map<VertexCache>(() => ({
+  vertex: new Vertex([0, 0, 0]),
+  vsOutput: { clip_space_position: new Vector4() },
+}));
 
 export class Renderer {
   buffer: Uint8ClampedArray = new Uint8ClampedArray();
@@ -33,6 +38,7 @@ export class Renderer {
   elapsedTime: number = 0;
 
   WIREFRAME = false;
+  EDGE_WALK = false;
 
   constructor(public width: number, public height: number) {
     this.setViewportSize(width, height);
@@ -82,13 +88,7 @@ export class Renderer {
   }
 
   drawMesh(mesh: Mesh<Vertex>): void {
-    const vertex_cache: VertexCache[] = [];
-    for (let i = 0; i < mesh.verticies.length; i++) {
-      vertex_cache.push({
-        vertex: mesh.verticies[i],
-        vsOutput: this.shader.vertexShader(mesh.verticies[i]),
-      });
-    }
+    this.vertexShading(mesh.verticies);
 
     for (let i = 0; i < mesh.indicies.length; i += 3) {
       // Verticies
@@ -100,18 +100,35 @@ export class Renderer {
     }
   }
 
+  private vertexShading(verticies: Vertex[]) {
+    // const vertex_cache: VertexCache[] = [];
+    for (let i = 0; i < verticies.length; i++) {
+      // vertex_cache.push({
+      //   vertex: mesh.verticies[i],
+      //   vsOutput: this.shader.vertexShader(mesh.verticies[i]),
+      // });
+
+      vertex_cache[i].vertex = verticies[i];
+      vertex_cache[i].vsOutput = this.shader.vertexShader(verticies[i]);
+    }
+  }
+
   private vertexPostProcess(vc1: VertexCache, vc2: VertexCache, vc3: VertexCache) {
     // Clip Space Coordinates
     const c1 = vc1.vsOutput.clip_space_position;
     const c2 = vc2.vsOutput.clip_space_position;
     const c3 = vc3.vsOutput.clip_space_position;
 
-    const c1IsOutside =
-      c1.w <= 0 || c1.x < -c1.w || c1.x > c1.w || c1.y < -c1.w || c1.y > c1.w || c1.z < -c1.w || c1.z > c1.w;
-    const c2IsOutside =
-      c2.w <= 0 || c2.x < -c2.w || c2.x > c2.w || c2.y < -c2.w || c2.y > c2.w || c2.z < -c2.w || c2.z > c2.w;
-    const c3IsOutside =
-      c3.w <= 0 || c3.x < -c3.w || c3.x > c3.w || c3.y < -c3.w || c3.y > c3.w || c3.z < -c3.w || c3.z > c3.w;
+    // const c1IsOutside =
+    //   c1.w <= 0 || c1.x < -c1.w || c1.x > c1.w || c1.y < -c1.w || c1.y > c1.w || c1.z < -c1.w || c1.z > c1.w;
+    // const c2IsOutside =
+    //   c2.w <= 0 || c2.x < -c2.w || c2.x > c2.w || c2.y < -c2.w || c2.y > c2.w || c2.z < -c2.w || c2.z > c2.w;
+    // const c3IsOutside =
+    //   c3.w <= 0 || c3.x < -c3.w || c3.x > c3.w || c3.y < -c3.w || c3.y > c3.w || c3.z < -c3.w || c3.z > c3.w;
+
+    const c1IsOutside = c1.w <= 0 || c1.z < -c1.w || c1.z > c1.w;
+    const c2IsOutside = c2.w <= 0 || c2.z < -c2.w || c2.z > c2.w;
+    const c3IsOutside = c3.w <= 0 || c3.z < -c3.w || c3.z > c3.w;
 
     if (c1IsOutside && c2IsOutside && c3IsOutside) return;
     else if (!c1IsOutside && !c2IsOutside && !c3IsOutside) this.rasterization(vc1, vc2, vc3);
@@ -139,15 +156,51 @@ export class Renderer {
     }
 
     // Screen Space Coordinates
-    const r1 = new Vector3((n1.x + 1) * 0.5 * (this.width - 1), (1 - (n1.y + 1) * 0.5) * (this.height - 1), n1.z);
-    const r2 = new Vector3((n2.x + 1) * 0.5 * (this.width - 1), (1 - (n2.y + 1) * 0.5) * (this.height - 1), n2.z);
-    const r3 = new Vector3((n3.x + 1) * 0.5 * (this.width - 1), (1 - (n3.y + 1) * 0.5) * (this.height - 1), n3.z);
+    const r1 = new Vector3(
+      Math.floor((n1.x + 1) * 0.5 * (this.width - 1)),
+      Math.floor((1 - (n1.y + 1) * 0.5) * (this.height - 1)),
+      n1.z,
+    );
+    const r2 = new Vector3(
+      Math.floor((n2.x + 1) * 0.5 * (this.width - 1)),
+      Math.floor((1 - (n2.y + 1) * 0.5) * (this.height - 1)),
+      n2.z,
+    );
+    const r3 = new Vector3(
+      Math.floor((n3.x + 1) * 0.5 * (this.width - 1)),
+      Math.floor((1 - (n3.y + 1) * 0.5) * (this.height - 1)),
+      n3.z,
+    );
+
+    vc1.screen_space_position = r1;
+    vc2.screen_space_position = r2;
+    vc3.screen_space_position = r3;
 
     if (this.WIREFRAME) {
       // Bresenham's line drawing algorithm
       this.rasterizeLine(r1, r2);
       this.rasterizeLine(r2, r3);
       this.rasterizeLine(r3, r1);
+    } else if (this.EDGE_WALK) {
+      if (!vc1.screen_space_position || !vc2.screen_space_position || !vc3.screen_space_position) return;
+      if (vc1.screen_space_position.y > vc2.screen_space_position.y) [vc1, vc2] = [vc2, vc1];
+
+      if (!vc1.screen_space_position || !vc2.screen_space_position || !vc3.screen_space_position) return;
+      if (vc1.screen_space_position.y > vc3.screen_space_position.y) [vc1, vc3] = [vc3, vc1];
+
+      if (!vc1.screen_space_position || !vc2.screen_space_position || !vc3.screen_space_position) return;
+      if (vc2.screen_space_position.y > vc3.screen_space_position.y) [vc2, vc3] = [vc3, vc2];
+
+      if (!vc1.screen_space_position || !vc2.screen_space_position || !vc3.screen_space_position) return;
+      if (vc1.screen_space_position.y !== vc2.screen_space_position.y) {
+        this.drawFlatTriangle(vc1, vc2, vc3);
+      }
+
+      if (vc2.screen_space_position.y !== vc3.screen_space_position.y) {
+        this.drawFlatTriangle(vc3, vc2, vc1);
+      }
+
+      // vc.sort((a, b) => (a?.screen_space_position?.y > b?.screen_space_position?.y ? 1 : -1));
     } else {
       // Bounding box of triangle
       const minX = Math.min(r1.x, r2.x, r3.x);
@@ -238,6 +291,101 @@ export class Renderer {
     this.buffer[bufferIndex + 1] = color.green;
     this.buffer[bufferIndex + 2] = color.blue;
     this.buffer[bufferIndex + 3] = color.alpha;
+  }
+
+  /**
+   * Edge Walk reasterization attempt
+   */
+  private drawFlatTriangle(vc1: VertexCache, vc2: VertexCache, vc3: VertexCache) {
+    if (!vc1.screen_space_position || !vc2.screen_space_position || !vc3.screen_space_position) return;
+    if (
+      !(
+        vc1.screen_space_position.y <= vc2.screen_space_position.y &&
+        vc2.screen_space_position.y <= vc3.screen_space_position.y
+      ) &&
+      !(
+        vc1.screen_space_position.y >= vc2.screen_space_position.y &&
+        vc2.screen_space_position.y >= vc3.screen_space_position.y
+      )
+    )
+      return;
+
+    const r1 = new Vector3(
+      Math.floor(vc1.screen_space_position.x),
+      Math.floor(vc1.screen_space_position.y),
+      vc1.screen_space_position.z,
+    );
+    const r2 = new Vector3(
+      Math.floor(vc2.screen_space_position.x),
+      Math.floor(vc2.screen_space_position.y),
+      vc2.screen_space_position.z,
+    );
+    const r3 = new Vector3(
+      Math.floor(vc3.screen_space_position.x),
+      Math.floor(vc3.screen_space_position.y),
+      vc3.screen_space_position.z,
+    );
+
+    const dx1 = Math.abs(r2.x - r1.x);
+    const dy1 = -Math.abs(r2.y - r1.y);
+
+    const dx2 = Math.abs(r3.x - r1.x);
+    const dy2 = -Math.abs(r2.y - r1.y);
+
+    const sx1 = r1.x < r2.x ? 1 : -1;
+    const sy1 = r1.y < r2.y ? 1 : -1;
+
+    const sx2 = r1.x < r3.x ? 1 : -1;
+    const sy2 = r1.y < r2.y ? 1 : -1;
+
+    let error1 = dx1 + dy1;
+    let error2 = dx2 + dy2;
+
+    const pointer1 = new Vector3(r1);
+    const pointer2 = new Vector3(r1);
+
+    while (true && pointer1.y < this.height && pointer1.x < this.width) {
+      for (let x = pointer1.x; x !== pointer2.x; x += Math.sign(pointer2.x - x)) {
+        // this.putPixel(x, pointer1.y, pointer1.z, Color.blue);
+        const point = new Vector3();
+        point.x = x;
+        point.y = pointer1.y;
+
+        const barycentric = this.getBarycentricCoords(r1, r2, r3, point);
+        point.z = barycentric.x * r1.z + barycentric.y * r2.z + barycentric.z * r3.z;
+
+        const fragmentShaderInput = this._calculateFragmentShaderInput(vc1, vc2, vc3, barycentric);
+        this.fragmentShading(point, fragmentShaderInput);
+      }
+
+      if (pointer1.x === r2.x && pointer1.y === r2.y) break;
+      const e2 = 2 * error1;
+      if (e2 >= dy1) {
+        if (pointer1.x === r2.x) break;
+        error1 = error1 + dy1;
+        pointer1.x = pointer1.x + sx1;
+      }
+      if (e2 <= dx1) {
+        if (pointer1.y === r2.y) break;
+        error1 = error1 + dx1;
+        pointer1.y = pointer1.y + sy1;
+      }
+
+      while (pointer2.y !== pointer1.y) {
+        if (pointer2.x === r3.x && pointer2.y === r3.y) break;
+        const e2 = 2 * error2;
+        if (e2 >= dy2) {
+          if (pointer2.x === r3.x) break;
+          error2 = error2 + dy2;
+          pointer2.x = pointer2.x + sx2;
+        }
+        if (e2 <= dx2) {
+          if (pointer2.y === r3.y) break;
+          error2 = error2 + dx2;
+          pointer2.y = pointer2.y + sy2;
+        }
+      }
+    }
   }
 
   private putPixel(x: number, y: number, z: number = 0, color: Color = Color.black) {

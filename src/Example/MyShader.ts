@@ -34,7 +34,8 @@ export class MyShader extends Shader {
 
     return {
       clip_space_position: clipSpace,
-      texture_coords: vertex.texCoord,
+      // Off texture for now
+      // texture_coords: vertex.texCoord,
       normal_coords: new Vector3(normal),
       frag_position: new Vector3(fragmentPosition),
     };
@@ -43,21 +44,20 @@ export class MyShader extends Shader {
   fragmentShader({ texture_coords, normal_coords, frag_position }: any): FragmentShaderOutput {
     let fragment_color = this.fragColor;
 
-    // Off texture for now
-    // if (this.texture && texture_coords) {
-    //   const tx = new Vector2(
-    //     Math.floor(texture_coords.x * this.texture?.width),
-    //     Math.floor(texture_coords.y * this.texture?.height),
-    //   );
-    //   const index = (tx.y * this.texture.width + tx.x) * 4;
+    if (this.texture && texture_coords) {
+      const tx = new Vector2(
+        Math.floor(texture_coords.x * this.texture?.width),
+        Math.floor(texture_coords.y * this.texture?.height),
+      );
+      const index = (tx.y * this.texture.width + tx.x) * 4;
 
-    //   fragment_color = new Color(
-    //     this.texture.data[index + 0],
-    //     this.texture.data[index + 1],
-    //     this.texture.data[index + 2],
-    //     this.texture.data[index + 3],
-    //   );
-    // }
+      fragment_color = new Color(
+        this.texture.data[index + 0],
+        this.texture.data[index + 1],
+        this.texture.data[index + 2],
+        this.texture.data[index + 3],
+      );
+    }
 
     if (normal_coords && frag_position) {
       // Ambiant Light Example

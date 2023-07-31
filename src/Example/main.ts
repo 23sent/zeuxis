@@ -22,6 +22,8 @@ const triangle2 = Mesh.fromArrays(
 );
 
 let cube = new Mesh(0, 0);
+let bunny = new Mesh(0, 0);
+let face = new Mesh(0, 0);
 let texture: ImageData;
 
 class Main {
@@ -48,8 +50,22 @@ class Main {
     this.renderer.WIREFRAME = false;
     this.camera.setPosition(new Vector3(0, 0, -2));
 
-    OBJLoader('./assets/african_head.obj').then((obj) => {
+    OBJLoader('./assets/cube.obj').then((obj) => {
       cube = Mesh.fromArrays(
+        obj.vertices.map((v) => new Vertex(v.position, v.textCoord, v.normal)),
+        obj.indices,
+      );
+    });
+
+    OBJLoader('./assets/african_head.obj').then((obj) => {
+      face = Mesh.fromArrays(
+        obj.vertices.map((v) => new Vertex(v.position, v.textCoord, v.normal)),
+        obj.indices,
+      );
+    });
+
+    OBJLoader('./assets/bunny.obj').then((obj) => {
+      bunny = Mesh.fromArrays(
         obj.vertices.map((v) => new Vertex(v.position, v.textCoord, v.normal)),
         obj.indices,
       );
@@ -112,6 +128,7 @@ class Main {
 
   start() {
     if (this.isRun) return;
+    this.shader.transform = Matrix4x4.fromQuaternion(Quaternion.fromEuler(new Vector3(0, 180, 0)));
 
     this.isRun = true;
     this.run();
@@ -125,16 +142,16 @@ class Main {
     this.renderer.shader = this.shader;
 
     // Rotate over time
-    this.shader.transform = this.shader.transform.multiply(
-      Matrix4x4.fromQuaternion(Quaternion.fromEuler(0, 30 * this.renderer.deltaTime, 0)),
-    );
+    // this.shader.transform = this.shader.transform.multiply(
+    //   Matrix4x4.fromQuaternion(Quaternion.fromEuler(0, 30 * this.renderer.deltaTime, 0)),
+    // );
     this.shader.transformInverseTranspose = this.shader.transform.inverse().transpose();
 
-    // this.shader.lightPosition = new Vector3(
-    //   new Vector4(this.shader.lightPosition).multiply(
-    //     Matrix4x4.fromQuaternion(Quaternion.fromEuler(0, 30 * this.renderer.deltaTime, 0)),
-    //   ),
-    // );
+    this.shader.lightPosition = new Vector3(
+      new Vector4(this.shader.lightPosition).multiply(
+        Matrix4x4.fromQuaternion(Quaternion.fromEuler(0, 30 * this.renderer.deltaTime, 0)),
+      ),
+    );
 
     this.shader.texture = texture;
     this.shader.viewProjectionMatrix = this.camera.getViewProjectionMatrix();
@@ -144,10 +161,23 @@ class Main {
     // this.shader.fragColor = new Color(0, 255, 0);
     // this.renderer.drawMesh(triangle2);
 
-    // this.renderer.drawMesh(cube);
     this.shader.fragColor = new Color(255, 0, 0);
-    // this.renderer.drawMesh(Mesh.QuadMesh);
     this.renderer.drawMesh(cube);
+
+    // this.shader.fragColor = new Color(255, 255, 0);
+    // this.renderer.drawMesh(bunny);
+
+    this.shader.fragColor = new Color(255, 0, 0);
+    // this.renderer.drawMesh(face);
+
+    // this.shader.fragColor = new Color(255, 255, 0);
+    // this.renderer.drawMesh(bunny);
+
+    // this.shader.fragColor = new Color(255, 0, 0);
+    // this.renderer.drawMesh(cube);
+
+    // this.shader.fragColor = new Color(255, 255, 0);
+    // this.renderer.drawMesh(bunny);
     // this.renderer.drawMesh(triangle2);
 
     this.renderCallback(this.renderer.switchBuffer(), this.renderer);

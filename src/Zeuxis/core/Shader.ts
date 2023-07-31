@@ -1,8 +1,6 @@
 import { Color, Vertex } from '../api';
 import { Vector4 } from '../math';
 
-export interface VertexShaderParameters {}
-
 export interface VertexShaderOutput {
   clip_space_position: Vector4;
   [x: string | number | symbol]: unknown;
