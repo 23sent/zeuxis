@@ -59,12 +59,7 @@ export class Matrix4x4 {
     const minor_2 = this.get(1, 0) * det_13 - this.get(1, 1) * det_03 + this.get(1, 3) * det_01;
     const minor_3 = this.get(1, 0) * det_12 - this.get(1, 1) * det_02 + this.get(1, 2) * det_01;
 
-    return (
-      this.get(0, 0) * minor_0 -
-      this.get(0, 1) * minor_1 +
-      this.get(0, 2) * minor_2 -
-      this.get(0, 3) * minor_3
-    );
+    return this.get(0, 0) * minor_0 - this.get(0, 1) * minor_1 + this.get(0, 2) * minor_2 - this.get(0, 3) * minor_3;
   }
 
   inverse(): Matrix4x4 {
@@ -103,42 +98,26 @@ export class Matrix4x4 {
     const det_4_5_8_9 = this._data[4] * this._data[9] - this._data[5] * this._data[8];
 
     // minor_yx -> Minor of row y, col x
-    const minor_00 =
-      this._data[5] * det_10_11_14_15 - this._data[6] * det_9_11_13_15 + this._data[7] * det_9_10_13_14;
-    const minor_01 =
-      this._data[4] * det_10_11_14_15 - this._data[6] * det_8_11_12_15 + this._data[7] * det_8_10_12_14;
-    const minor_02 =
-      this._data[4] * det_9_11_13_15 - this._data[5] * det_8_11_12_15 + this._data[7] * det_8_9_12_13;
-    const minor_03 =
-      this._data[4] * det_9_10_13_14 - this._data[5] * det_8_10_12_14 + this._data[6] * det_8_9_12_13;
+    const minor_00 = this._data[5] * det_10_11_14_15 - this._data[6] * det_9_11_13_15 + this._data[7] * det_9_10_13_14;
+    const minor_01 = this._data[4] * det_10_11_14_15 - this._data[6] * det_8_11_12_15 + this._data[7] * det_8_10_12_14;
+    const minor_02 = this._data[4] * det_9_11_13_15 - this._data[5] * det_8_11_12_15 + this._data[7] * det_8_9_12_13;
+    const minor_03 = this._data[4] * det_9_10_13_14 - this._data[5] * det_8_10_12_14 + this._data[6] * det_8_9_12_13;
 
-    const minor_10 =
-      this._data[1] * det_10_11_14_15 - this._data[2] * det_9_11_13_15 + this._data[3] * det_9_10_13_14;
-    const minor_11 =
-      this._data[0] * det_10_11_14_15 - this._data[2] * det_8_11_12_15 + this._data[3] * det_8_10_12_14;
-    const minor_12 =
-      this._data[0] * det_9_11_13_15 - this._data[1] * det_8_11_12_15 + this._data[3] * det_8_9_12_13;
-    const minor_13 =
-      this._data[0] * det_9_10_13_14 - this._data[1] * det_8_10_12_14 + this._data[2] * det_8_9_12_13;
+    const minor_10 = this._data[1] * det_10_11_14_15 - this._data[2] * det_9_11_13_15 + this._data[3] * det_9_10_13_14;
+    const minor_11 = this._data[0] * det_10_11_14_15 - this._data[2] * det_8_11_12_15 + this._data[3] * det_8_10_12_14;
+    const minor_12 = this._data[0] * det_9_11_13_15 - this._data[1] * det_8_11_12_15 + this._data[3] * det_8_9_12_13;
+    const minor_13 = this._data[0] * det_9_10_13_14 - this._data[1] * det_8_10_12_14 + this._data[2] * det_8_9_12_13;
 
-    const minor_20 =
-      this._data[1] * det_6_7_14_15 - this._data[2] * det_5_7_13_15 + this._data[3] * det_5_6_13_14;
-    const minor_21 =
-      this._data[0] * det_6_7_14_15 - this._data[2] * det_4_7_12_15 + this._data[3] * det_4_6_12_14;
-    const minor_22 =
-      this._data[0] * det_5_7_13_15 - this._data[1] * det_4_7_12_15 + this._data[3] * det_4_5_12_13;
-    const minor_23 =
-      this._data[0] * det_5_6_13_14 - this._data[1] * det_4_6_12_14 + this._data[2] * det_4_5_12_13;
+    const minor_20 = this._data[1] * det_6_7_14_15 - this._data[2] * det_5_7_13_15 + this._data[3] * det_5_6_13_14;
+    const minor_21 = this._data[0] * det_6_7_14_15 - this._data[2] * det_4_7_12_15 + this._data[3] * det_4_6_12_14;
+    const minor_22 = this._data[0] * det_5_7_13_15 - this._data[1] * det_4_7_12_15 + this._data[3] * det_4_5_12_13;
+    const minor_23 = this._data[0] * det_5_6_13_14 - this._data[1] * det_4_6_12_14 + this._data[2] * det_4_5_12_13;
 
-    const minor_30 =
-      this._data[1] * det_6_7_10_11 - this._data[2] * det_5_7_9_11 + this._data[3] * det_5_6_9_10;
-    const minor_31 =
-      this._data[0] * det_6_7_10_11 - this._data[2] * det_4_7_8_11 + this._data[3] * det_4_6_8_10;
+    const minor_30 = this._data[1] * det_6_7_10_11 - this._data[2] * det_5_7_9_11 + this._data[3] * det_5_6_9_10;
+    const minor_31 = this._data[0] * det_6_7_10_11 - this._data[2] * det_4_7_8_11 + this._data[3] * det_4_6_8_10;
 
-    const minor_32 =
-      this._data[0] * det_5_7_9_11 - this._data[1] * det_4_7_8_11 + this._data[3] * det_4_5_8_9;
-    const minor_33 =
-      this._data[0] * det_5_6_9_10 - this._data[1] * det_4_6_8_10 + this._data[2] * det_4_5_8_9;
+    const minor_32 = this._data[0] * det_5_7_9_11 - this._data[1] * det_4_7_8_11 + this._data[3] * det_4_5_8_9;
+    const minor_33 = this._data[0] * det_5_6_9_10 - this._data[1] * det_4_6_8_10 + this._data[2] * det_4_5_8_9;
 
     return new Matrix4x4([
       +minor_00 * oneOverDet,
@@ -300,14 +279,7 @@ export class Matrix4x4 {
    * @param zFar
    * @returns
    */
-  static ortho(
-    left: number,
-    right: number,
-    bottom: number,
-    top: number,
-    zNear: number,
-    zFar: number,
-  ): Matrix4x4 {
+  static ortho(left: number, right: number, bottom: number, top: number, zNear: number, zFar: number): Matrix4x4 {
     const m00 = 2.0 / (right - left);
     const m11 = 2.0 / (top - bottom);
     const m22 = 1.0 / (zFar - zNear);

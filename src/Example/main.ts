@@ -48,7 +48,7 @@ class Main {
 
   private constructor() {
     this.renderer.WIREFRAME = false;
-    this.camera.setPosition(new Vector3(0, 0, -2));
+    this.camera.setPosition(new Vector3(0, 0, -4));
 
     OBJLoader('./assets/cube.obj').then((obj) => {
       cube = Mesh.fromArrays(

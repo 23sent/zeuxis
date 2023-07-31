@@ -38,7 +38,7 @@ export class Camera {
 
   calculateProjectionMatrix() {
     if (this._projectionType === ProjectionType.Perspective) {
-      this._projection = Matrix4x4.perspective(90, this._aspect, 0.1, 20);
+      this._projection = Matrix4x4.perspective(45, this._aspect, 0.1, 20);
     } else if (this._projectionType === ProjectionType.Orthographic) {
       this._projection = Matrix4x4.ortho(-this._aspect, this._aspect, -1.0, 1.0, -1.0, 1.0);
     }
