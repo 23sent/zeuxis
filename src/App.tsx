@@ -3,9 +3,9 @@ import './App.css';
 import Main from './Example/main';
 import { Renderer, resizeImageBuffer } from './Zeuxis';
 
-const RATIO = 1;
-const BUFFER_W = 16 * 50;
-const BUFFER_H = 9 * 50;
+const RATIO = 2;
+const BUFFER_W = 16 * 25;
+const BUFFER_H = 9 * 25;
 const CANVAS_WIDTH = BUFFER_W * RATIO;
 const CANVAS_HEIGHT = BUFFER_H * RATIO;
 

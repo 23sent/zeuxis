@@ -12,19 +12,11 @@ import { Quaternion } from '../Zeuxis/math/Quaternion';
  *  https://raw.githubusercontent.com/erik/obj-viewer/master/models/pyramid.obj
  */
 
-const triangle = Mesh.fromArrays(
-  [new Vertex([-0.9, 0, 0.8]), new Vertex([0, 0.5, 0.8]), new Vertex([0.9, 0, 0.8])],
-  [0, 1, 2],
-);
-const triangle2 = Mesh.fromArrays(
-  [new Vertex([-0.5, 0, 0], [0, 0]), new Vertex([0.5, 1, 0], [0, 1]), new Vertex([0.5, 0, 0], [1, 0])],
-  [0, 1, 2],
-);
-
 let cube = new Mesh(0, 0);
 let bunny = new Mesh(0, 0);
 let face = new Mesh(0, 0);
 let texture: ImageData;
+let spiderman = new Mesh(0, 0);
 
 class Main {
   private static instance: Main;
@@ -66,6 +58,13 @@ class Main {
 
     OBJLoader('./assets/bunny.obj').then((obj) => {
       bunny = Mesh.fromArrays(
+        obj.vertices.map((v) => new Vertex(v.position, v.textCoord, v.normal)),
+        obj.indices,
+      );
+    });
+
+    OBJLoader('./assets/spiderman.obj').then((obj) => {
+      spiderman = Mesh.fromArrays(
         obj.vertices.map((v) => new Vertex(v.position, v.textCoord, v.normal)),
         obj.indices,
       );
@@ -170,6 +169,8 @@ class Main {
 
     this.shader.fragColor = new Color(255, 0, 0);
     this.renderer.drawMesh(face);
+
+    // this.renderer.drawMesh(spiderman);
 
     // this.shader.fragColor = new Color(255, 255, 0);
     // this.renderer.drawMesh(bunny);

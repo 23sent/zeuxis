@@ -1,6 +1,7 @@
 import { Quaternion } from '../Quaternion';
-import { Vector3, Vector4 } from '../Vector';
+import { Vector3 } from '../Vector';
 
+// TODO: Expand Matrix transpose and multiplication operations
 export class Matrix4x4 {
   public readonly ROWS: number = 4;
   public readonly COLS: number = 4;
@@ -194,8 +195,6 @@ export class Matrix4x4 {
 
   // Static Operation
   static Multiply(a: Matrix4x4, b: Matrix4x4): Matrix4x4 {
-    if (a.COLS !== b.ROWS) throw new Error('Invalid matrix multiplication.');
-
     const result = new Matrix4x4();
     for (let i = 0; i < 4; i++) {
       for (let j = 0; j < 4; j++) {
@@ -332,27 +331,3 @@ export class Matrix4x4 {
     ]),
   );
 }
-
-// const test = new Matrix4x4([
-//   [1, 9, 2, 8],
-//   [3, 7, 4, 6],
-//   [5, 1, 2, 3],
-//   [4, 5, 6, 7],
-// ]);
-
-// const inverse = test.inverse();
-
-// console.log('Det: ', test.determinant());
-// console.log(inverse);
-// console.log(test.multiply(inverse));
-
-// const test = new Matrix4x4();
-// const translated = test.translate(5, 4, 3);
-// const scaled = test.scale(0.5, 0.5, 0.5);
-// console.log(scaled);
-
-// const quat = Quaternion.fromEuler(30, 30, 30);
-// console.log(quat);
-
-// const test = Matrix4x4.fromQuaternion(quat);
-// console.log(test);
