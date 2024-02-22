@@ -1,20 +1,36 @@
 import Main from './Example/main';
 import { Renderer, resizeImageBuffer } from './Zeuxis';
 
-export function setTo(obj: any, options: any) {
+declare global {
+  interface HTMLElement {
+    setTo(options: any): this;
+  }
+}
+
+HTMLElement.prototype.setTo = function (options: any) {
+  return setTo(this, options);
+};
+
+export function setTo<T>(obj: T, options: Partial<T>): T {
   for (let key in options) {
     const value = options[key];
     if (typeof value === 'object') {
       setTo(obj[key], value);
     } else {
+      // @ts-ignore
       obj[key] = value;
     }
   }
+
+  return obj;
 }
 
-export function create(tag: string, options: any) {
+export function create<K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  options?: any,
+): HTMLElementTagNameMap[K] {
   const element = document.createElement(tag);
-  setTo(element, options);
+  element.setTo(options);
   return element;
 }
 
@@ -29,7 +45,7 @@ export function setupCanvas(root: HTMLElement) {
     width: CANVAS_WIDTH,
     height: CANVAS_HEIGHT,
     style: { width: `${CANVAS_WIDTH}px`, height: `${CANVAS_HEIGHT}px` },
-  }) as HTMLCanvasElement;
+  });
 
   const frameRate = create('div', { innerText: '0' });
 
