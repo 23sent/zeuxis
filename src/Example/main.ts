@@ -35,8 +35,10 @@ class Main {
   nextFrameId = 0;
   isRun = false;
 
-  renderCallback: (buffer: Uint8ClampedArray, r: Renderer) => void = (b: Uint8ClampedArray, r: Renderer) =>
-    console.log(r.fps);
+  renderCallback: (buffer: Uint8ClampedArray, r: Renderer) => void = (
+    b: Uint8ClampedArray,
+    r: Renderer,
+  ) => console.log(r.fps);
 
   private constructor() {
     this.renderer.WIREFRAME = false;

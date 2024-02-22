@@ -47,7 +47,9 @@ export function setupCanvas(root: HTMLElement) {
     style: { width: `${CANVAS_WIDTH}px`, height: `${CANVAS_HEIGHT}px` },
   });
 
-  const frameRate = create('div', { innerText: '0' });
+  const frameRate = create('div', {
+    innerText: `0 fps, 0 total frame count`,
+  });
 
   function render(b: Uint8ClampedArray, renderer: Renderer) {
     if (canvas && frameRate) {
@@ -69,11 +71,25 @@ export function setupCanvas(root: HTMLElement) {
   Main.setViewportSize(BUFFER_W, BUFFER_H);
   Main.setRenderCallback(render);
 
-  const button = create('button', { onclick: () => Main.start(), innerText: 'Start' });
-  const buttonStop = create('button', { onclick: () => Main.stop(), innerText: 'Stop' });
+  const button = create('button', {
+    onclick: function () {
+      if (Main.isRun) Main.stop();
+      else Main.start();
+      if (Main.isRun) this.innerText = 'Stop';
+      else this.innerText = 'Start';
+    },
+    innerText: 'Start',
+  });
+
+  const wireframeButton = create('button', {
+    innerText: 'Line / Fill',
+    onclick: () => {
+      Main.renderer.WIREFRAME = !Main.renderer.WIREFRAME;
+    },
+  });
 
   root.appendChild(frameRate);
   root.appendChild(canvas);
   root.appendChild(button);
-  root.appendChild(buttonStop);
+  root.appendChild(wireframeButton);
 }
