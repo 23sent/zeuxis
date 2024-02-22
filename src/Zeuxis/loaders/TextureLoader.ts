@@ -1,5 +1,3 @@
-import { FileLoader } from './Loader';
-
 const canvas = document.createElement('canvas');
 
 export async function TextureLoader(filepath: string) {
