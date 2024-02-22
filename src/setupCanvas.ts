@@ -44,7 +44,13 @@ export function setupCanvas(root: HTMLElement) {
   const canvas = create('canvas', {
     width: CANVAS_WIDTH,
     height: CANVAS_HEIGHT,
-    style: { width: `${CANVAS_WIDTH}px`, height: `${CANVAS_HEIGHT}px` },
+    style: {
+      width: `${CANVAS_WIDTH}px`,
+      // height: `${CANVAS_HEIGHT}px`,
+      maxWidth: 'calc(100vw - 1rem)',
+      aspectRatio: `${CANVAS_WIDTH} / ${CANVAS_HEIGHT}`,
+      alignSelf: 'center',
+    },
   });
 
   const frameRate = create('div', {
