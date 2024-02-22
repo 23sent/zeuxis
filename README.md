@@ -1,1 +1,0 @@
-Simple software renderer
