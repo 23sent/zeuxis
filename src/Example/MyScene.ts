@@ -15,7 +15,6 @@ import { Quaternion } from '../Zeuxis/math/Quaternion';
 let cube = new Mesh(0, 0);
 let bunny = new Mesh(0, 0);
 let face = new Mesh(0, 0);
-let texture: ImageData;
 let spiderman = new Mesh(0, 0);
 
 class Main {
@@ -44,12 +43,12 @@ class Main {
     this.renderer.WIREFRAME = false;
     this.camera.setPosition(new Vector3(0, 0, -4));
 
-    OBJLoader('./assets/cube.obj').then((obj) => {
-      cube = Mesh.fromArrays(
-        obj.vertices.map((v) => new Vertex(v.position, v.textCoord, v.normal)),
-        obj.indices,
-      );
-    });
+    // OBJLoader('./assets/cube.obj').then((obj) => {
+    //   cube = Mesh.fromArrays(
+    //     obj.vertices.map((v) => new Vertex(v.position, v.textCoord, v.normal)),
+    //     obj.indices,
+    //   );
+    // });
 
     OBJLoader('./assets/african_head.obj').then((obj) => {
       face = Mesh.fromArrays(
@@ -58,19 +57,19 @@ class Main {
       );
     });
 
-    OBJLoader('./assets/bunny.obj').then((obj) => {
-      bunny = Mesh.fromArrays(
-        obj.vertices.map((v) => new Vertex(v.position, v.textCoord, v.normal)),
-        obj.indices,
-      );
-    });
+    // OBJLoader('./assets/bunny.obj').then((obj) => {
+    //   bunny = Mesh.fromArrays(
+    //     obj.vertices.map((v) => new Vertex(v.position, v.textCoord, v.normal)),
+    //     obj.indices,
+    //   );
+    // });
 
-    OBJLoader('./assets/spiderman.obj').then((obj) => {
-      spiderman = Mesh.fromArrays(
-        obj.vertices.map((v) => new Vertex(v.position, v.textCoord, v.normal)),
-        obj.indices,
-      );
-    });
+    // OBJLoader('./assets/spiderman.obj').then((obj) => {
+    //   spiderman = Mesh.fromArrays(
+    //     obj.vertices.map((v) => new Vertex(v.position, v.textCoord, v.normal)),
+    //     obj.indices,
+    //   );
+    // });
 
     // TextureLoader('./assets/container.jpg').then((m) => {
     //   texture = m;
@@ -143,46 +142,24 @@ class Main {
     this.renderer.shader = this.shader;
 
     // Rotate over time
-    // this.shader.transform = this.shader.transform.multiply(
-    //   Matrix4x4.fromQuaternion(Quaternion.fromEuler(0, 30 * this.renderer.deltaTime, 0)),
-    // );
+    this.shader.transform = this.shader.transform.multiply(
+      Matrix4x4.fromQuaternion(Quaternion.fromEuler(0, 5 * this.renderer.deltaTime, 0)),
+    );
     this.shader.transformInverseTranspose = this.shader.transform.inverse().transpose();
 
     // Rotate light over time
     this.shader.lightPosition = new Vector3(
       new Vector4(this.shader.lightPosition).multiply(
-        Matrix4x4.fromQuaternion(Quaternion.fromEuler(0, 30 * this.renderer.deltaTime, 0)),
+        Matrix4x4.fromQuaternion(Quaternion.fromEuler(0, 60 * this.renderer.deltaTime, 0)),
       ),
     );
 
-    this.shader.texture = texture;
     this.shader.viewProjectionMatrix = this.camera.getViewProjectionMatrix();
 
-    // this.shader.fragColor = new Color(0, 0, 255);
-    // this.renderer.drawMesh(triangle);
-    // this.shader.fragColor = new Color(0, 255, 0);
-    // this.renderer.drawMesh(triangle2);
-
     this.shader.fragColor = new Color(255, 0, 0);
-    // this.renderer.drawMesh(cube);
-
-    // this.shader.fragColor = new Color(255, 255, 0);
-    // this.renderer.drawMesh(bunny);
 
     this.shader.fragColor = new Color(255, 0, 0);
     this.renderer.drawMesh(face);
-
-    // this.renderer.drawMesh(spiderman);
-
-    // this.shader.fragColor = new Color(255, 255, 0);
-    // this.renderer.drawMesh(bunny);
-
-    // this.shader.fragColor = new Color(255, 0, 0);
-    // this.renderer.drawMesh(cube);
-
-    // this.shader.fragColor = new Color(255, 255, 0);
-    // this.renderer.drawMesh(bunny);
-    // this.renderer.drawMesh(triangle2);
 
     this.renderCallback(this.renderer.switchBuffer(), this.renderer);
 

@@ -1,4 +1,4 @@
-import Main from './Example/main';
+import MyScene from './Example/MyScene';
 import { Renderer, resizeImageBuffer } from './Zeuxis';
 
 declare global {
@@ -68,14 +68,14 @@ export function setupCanvas(root: HTMLElement) {
     }
   }
 
-  Main.setViewportSize(BUFFER_W, BUFFER_H);
-  Main.setRenderCallback(render);
+  MyScene.setViewportSize(BUFFER_W, BUFFER_H);
+  MyScene.setRenderCallback(render);
 
   const button = create('button', {
     onclick: function () {
-      if (Main.isRun) Main.stop();
-      else Main.start();
-      if (Main.isRun) this.innerText = 'Stop';
+      if (MyScene.isRun) MyScene.stop();
+      else MyScene.start();
+      if (MyScene.isRun) this.innerText = 'Stop';
       else this.innerText = 'Start';
     },
     innerText: 'Start',
@@ -84,12 +84,21 @@ export function setupCanvas(root: HTMLElement) {
   const wireframeButton = create('button', {
     innerText: 'Line / Fill',
     onclick: () => {
-      Main.renderer.WIREFRAME = !Main.renderer.WIREFRAME;
+      MyScene.renderer.WIREFRAME = !MyScene.renderer.WIREFRAME;
     },
+  });
+
+  const info = create('pre', {
+    innerText: `Move camera with A, W, S, D keys and rotate with Q, E, 1, 2.`,
   });
 
   root.appendChild(frameRate);
   root.appendChild(canvas);
   root.appendChild(button);
   root.appendChild(wireframeButton);
+  root.appendChild(info);
+
+  setTimeout(() => {
+    button.click();
+  }, 250);
 }

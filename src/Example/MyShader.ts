@@ -26,7 +26,9 @@ export class MyShader extends Shader {
   // Shaders
   vertexShader(vertex: Vertex): VertexShaderOutput {
     // To Clip Space
-    const clipSpace = new Vector4(vertex.position).multiply(this.transform.multiply(this.viewProjectionMatrix));
+    const clipSpace = new Vector4(vertex.position).multiply(
+      this.transform.multiply(this.viewProjectionMatrix),
+    );
 
     const fragmentPosition = new Vector4(vertex.position).multiply(this.transform);
 
@@ -74,7 +76,10 @@ export class MyShader extends Shader {
       // fragment_color = Color.fromVec(diffuse.multiply(fragment_color.toVec3()), fragment_color.alpha);
 
       const effect = ambiant.add(diffuse);
-      fragment_color = Color.fromVec(effect.multiply(fragment_color.toVec3()), fragment_color.alpha);
+      fragment_color = Color.fromVec(
+        effect.multiply(fragment_color.toVec3()),
+        fragment_color.alpha,
+      );
     }
 
     return {

@@ -103,13 +103,7 @@ export class Renderer {
   }
 
   private vertexShading(verticies: Vertex[]) {
-    // const vertex_cache: VertexCache[] = [];
     for (let i = 0; i < verticies.length; i++) {
-      // vertex_cache.push({
-      //   vertex: mesh.verticies[i],
-      //   vsOutput: this.shader.vertexShader(mesh.verticies[i]),
-      // });
-
       vertex_cache[i].vertex = verticies[i];
 
       // Clip Space Coordinates
@@ -135,13 +129,6 @@ export class Renderer {
     const c2 = vc2.vsOutput.clip_space_position;
     const c3 = vc3.vsOutput.clip_space_position;
 
-    // const c1IsOutside =
-    //   c1.w <= 0 || c1.x < -c1.w || c1.x > c1.w || c1.y < -c1.w || c1.y > c1.w || c1.z < -c1.w || c1.z > c1.w;
-    // const c2IsOutside =
-    //   c2.w <= 0 || c2.x < -c2.w || c2.x > c2.w || c2.y < -c2.w || c2.y > c2.w || c2.z < -c2.w || c2.z > c2.w;
-    // const c3IsOutside =
-    //   c3.w <= 0 || c3.x < -c3.w || c3.x > c3.w || c3.y < -c3.w || c3.y > c3.w || c3.z < -c3.w || c3.z > c3.w;
-
     const c1IsOutside = c1.w <= 0 || c1.z < -c1.w || c1.z > c1.w;
     const c2IsOutside = c2.w <= 0 || c2.z < -c2.w || c2.z > c2.w;
     const c3IsOutside = c3.w <= 0 || c3.z < -c3.w || c3.z > c3.w;
@@ -152,7 +139,7 @@ export class Renderer {
       const n2 = vc2.ndc_position;
       const n3 = vc3.ndc_position;
 
-      // Caculate face normal
+      // Calculate face normal
       const faceNormal = n2.substract(n1).cross(n3.substract(n1));
       // Apply back-face culling
       if (faceNormal.z > 0) {
@@ -166,21 +153,6 @@ export class Renderer {
   }
 
   private rasterization(vc1: VertexCache, vc2: VertexCache, vc3: VertexCache) {
-    // Clip Space Coordinates
-    // const c1 = vc1.vsOutput.clip_space_position;
-    // const c2 = vc2.vsOutput.clip_space_position;
-    // const c3 = vc3.vsOutput.clip_space_position;
-
-    // Normalized Display Coordinates (ranges:  x[-1, 1], y[-1, 1], z[-1, 1],  left handed)
-    // const n1 = new Vector3(c1.x / c1.w, c1.y / c1.w, c1.z / c1.w);
-    // const n2 = new Vector3(c2.x / c2.w, c2.y / c2.w, c2.z / c2.w);
-    // const n3 = new Vector3(c3.x / c3.w, c3.y / c3.w, c3.z / c3.w);
-
-    // Screen Space Coordinates
-    // const r1 = new Vector3((n1.x + 1) * 0.5 * (this.width - 1), (1 - (n1.y + 1) * 0.5) * (this.height - 1), n1.z);
-    // const r2 = new Vector3((n2.x + 1) * 0.5 * (this.width - 1), (1 - (n2.y + 1) * 0.5) * (this.height - 1), n2.z);
-    // const r3 = new Vector3((n3.x + 1) * 0.5 * (this.width - 1), (1 - (n3.y + 1) * 0.5) * (this.height - 1), n3.z);
-
     const r1 = vc1.screen_space_position;
     const r2 = vc2.screen_space_position;
     const r3 = vc3.screen_space_position;
@@ -213,7 +185,12 @@ export class Renderer {
           point.z = barycentric.x * r1.z + barycentric.y * r2.z + barycentric.z * r3.z;
 
           if (barycentric.x >= 0 && barycentric.y >= 0 && barycentric.z >= 0) {
-            const fragmentShaderInput = this._calculateFragmentShaderInput(vc1, vc2, vc3, barycentric);
+            const fragmentShaderInput = this._calculateFragmentShaderInput(
+              vc1,
+              vc2,
+              vc3,
+              barycentric,
+            );
             this.fragmentShading(point, fragmentShaderInput);
           }
         }
@@ -221,7 +198,12 @@ export class Renderer {
     }
   }
 
-  _calculateFragmentShaderInput(vc1: VertexCache, vc2: VertexCache, vc3: VertexCache, barycentric: Vector3) {
+  _calculateFragmentShaderInput(
+    vc1: VertexCache,
+    vc2: VertexCache,
+    vc3: VertexCache,
+    barycentric: Vector3,
+  ) {
     // Clip Space Coordinates
     const c1 = vc1.vsOutput.clip_space_position;
     const c2 = vc2.vsOutput.clip_space_position;
@@ -241,8 +223,14 @@ export class Renderer {
         const wt = barycentric.x / c1.w + barycentric.y / c2.w + barycentric.z / c3.w;
 
         fragmentShaderInput[key] = new Vector3(
-          (barycentric.x * (k1.x / c1.w) + barycentric.y * (k2.x / c2.w) + barycentric.z * (k3.x / c3.w)) / wt,
-          (barycentric.x * (k1.y / c1.w) + barycentric.y * (k2.y / c2.w) + barycentric.z * (k3.y / c3.w)) / wt,
+          (barycentric.x * (k1.x / c1.w) +
+            barycentric.y * (k2.x / c2.w) +
+            barycentric.z * (k3.x / c3.w)) /
+            wt,
+          (barycentric.x * (k1.y / c1.w) +
+            barycentric.y * (k2.y / c2.w) +
+            barycentric.z * (k3.y / c3.w)) /
+            wt,
         );
       } else if (k1 instanceof Vector3 && k2 instanceof Vector3 && k3 instanceof Vector3) {
         // const i1 = new Vector4(k1.x / c1.w, k1.y / c1.w, k1.z / c1.w, 1 / c1.w);
@@ -251,9 +239,18 @@ export class Renderer {
         const wt = barycentric.x / c1.w + barycentric.y / c2.w + barycentric.z / c3.w;
 
         fragmentShaderInput[key] = new Vector3(
-          (barycentric.x * (k1.x / c1.w) + barycentric.y * (k2.x / c2.w) + barycentric.z * (k3.x / c3.w)) / wt,
-          (barycentric.x * (k1.y / c1.w) + barycentric.y * (k2.y / c2.w) + barycentric.z * (k3.y / c3.w)) / wt,
-          (barycentric.x * (k1.z / c1.w) + barycentric.y * (k2.z / c2.w) + barycentric.z * (k3.z / c3.w)) / wt,
+          (barycentric.x * (k1.x / c1.w) +
+            barycentric.y * (k2.x / c2.w) +
+            barycentric.z * (k3.x / c3.w)) /
+            wt,
+          (barycentric.x * (k1.y / c1.w) +
+            barycentric.y * (k2.y / c2.w) +
+            barycentric.z * (k3.y / c3.w)) /
+            wt,
+          (barycentric.x * (k1.z / c1.w) +
+            barycentric.y * (k2.z / c2.w) +
+            barycentric.z * (k3.z / c3.w)) /
+            wt,
         );
       }
     }
@@ -273,24 +270,6 @@ export class Renderer {
     // Z-buffer test
     if (this.zBuffer[pixelIndex] < fragment.z) return;
     else this.zBuffer[pixelIndex] = fragment.z;
-
-    // TODO: Color blending
-
-    this.buffer[bufferIndex + 0] = color.red;
-    this.buffer[bufferIndex + 1] = color.green;
-    this.buffer[bufferIndex + 2] = color.blue;
-    this.buffer[bufferIndex + 3] = color.alpha;
-  }
-
-  private putPixel(x: number, y: number, z: number = 0, color: Color = Color.black) {
-    const pixelIndex = y * this.width + x;
-    const bufferIndex = pixelIndex * 4;
-
-    // Per-Sample operations
-
-    // Z-buffer test
-    if (this.zBuffer[pixelIndex] < z) return;
-    else this.zBuffer[pixelIndex] = z;
 
     // TODO: Color blending
 
@@ -354,7 +333,11 @@ export class Renderer {
       return;
 
     // To Normalized Display Coordinates space
-    const NDCSpace = new Vector3(clipSpace.x / clipSpace.w, clipSpace.y / clipSpace.w, clipSpace.z / clipSpace.w);
+    const NDCSpace = new Vector3(
+      clipSpace.x / clipSpace.w,
+      clipSpace.y / clipSpace.w,
+      clipSpace.z / clipSpace.w,
+    );
 
     // To rasterized coordinates
     const rasterSpace = new Vector2(
