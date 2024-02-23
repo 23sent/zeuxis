@@ -81,8 +81,13 @@ export function setupCanvas(root: HTMLElement) {
     onclick: function () {
       if (MyScene.isRun) MyScene.stop();
       else MyScene.start();
-      if (MyScene.isRun) this.innerText = 'Stop';
-      else this.innerText = 'Start';
+      if (MyScene.isRun) {
+        this.innerText = 'Stop';
+        canvas.classList.add('running');
+      } else {
+        this.innerText = 'Start';
+        canvas.classList.remove('running');
+      }
     },
     innerText: 'Start',
   });
@@ -95,7 +100,9 @@ export function setupCanvas(root: HTMLElement) {
   });
 
   const info = create('pre', {
-    innerText: `Move camera with A, W, S, D keys and rotate with Q, E, 1, 2.`,
+    innerText:
+      `Move camera with A, W, S, D keys and rotate with Q, E, 1, 2. \n` +
+      `Zoom in/out with mouse wheel.`,
   });
 
   root.appendChild(frameRate);
